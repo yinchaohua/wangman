@@ -1,0 +1,71 @@
+package ${package.Service};
+
+import com.sgcc.uap.common.bean.exception.ServiceException;
+import com.sgcc.uap.common.bean.suppert.BospFormRequestObject;
+import com.sgcc.uap.common.bean.suppert.BospIdRequestObject;
+import com.sgcc.uap.common.bean.suppert.BospQueryResultObject;
+import com.sgcc.uap.common.bean.suppert.ServiceReturnMap;
+import com.sgcc.uap.rest.support.RequestCondition;
+import ${superServiceClassPackage};
+import ${package.Entity}.${table.entityName};
+
+/**
+ * <p>
+ * $!{table.comment} 服务类
+ * </p>
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+#if(${kotlin})
+interface ${table.serviceName} :${superServiceClass}<${table.entityName}>
+#else
+public interface ${table.serviceName} extends ${superServiceClass}<${table.entityName}> {
+     /**
+    * 通过id查询
+    * @param id 请求参数id
+    * @return BospQueryResultObject 业务数据
+    * @throws ServiceException
+    */
+    BospQueryResultObject getById(String id)throws ServiceException;
+
+    /**
+    * 分页查询
+    * @param requestR 请求参数集合
+    * @return BospQueryResultObject 业务数据
+    * @throws ServiceException
+    */
+    BospQueryResultObject listPage(RequestCondition requestR) throws ServiceException;
+
+    /**
+    * 保存
+    * @param formRequest 保存的参数
+    * @return ServiceReturnMap 保存结果
+    * @throws ServiceException
+    */
+    ServiceReturnMap save(BospFormRequestObject formRequest)throws ServiceException;
+   /**
+    * 查询全部
+    * @return BospQueryResultObject 查询结果
+    * @throws ServiceException
+    */
+    BospQueryResultObject list()throws ServiceException;
+
+    /**
+     * 更新
+     * @param formRequest 修改数据
+     * @return ServiceReturnMap 更新结果
+     * @throws ServiceException
+     */
+    ServiceReturnMap update(BospFormRequestObject formRequest) throws ServiceException;
+    /**
+      * 删除
+      * @param idRequestObject 数据id
+      * @return ServiceReturnMap
+      * @throws ServiceException
+      */
+    ServiceReturnMap deleteByIds(BospIdRequestObject idRequestObject) throws ServiceException;
+
+
+}
+#end

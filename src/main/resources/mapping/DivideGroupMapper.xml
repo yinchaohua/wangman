@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mg.sn.mill.mapper.DivideGroupMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.DivideGroup">
+        <id column="ID" property="id" />
+        <result column="NAME" property="name" />
+        <result column="MINING_POOL" property="miningPool" />
+        <result column="REMARK" property="remark" />
+        <result column="DEFAULT_STATUS" property="defaultStatus" />
+        <result column="CREATE_USER_ID" property="createUserId" />
+        <result column="CREATE_DATE" property="createDate" />
+        <result column="MODIFY_USER_ID" property="modifyUserId" />
+        <result column="MODIFY_DATE" property="modifyDate" />
+        <result column="WALLET_ID" property="walletId" />
+        <result column="CURRENCY_ID" property="currencyId" />
+    </resultMap>
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="DivideGroupDto" type="com.mg.sn.mill.model.dto.DivideGroupDto">
+        <id column="ID" property="id" />
+        <result column="NAME" property="name" />
+        <result column="MINING_POOL" property="miningPool" />
+        <result column="REMARK" property="remark" />
+        <result column="DEFAULT_STATUS" property="defaultStatus" />
+        <result column="CREATE_USER_ID" property="createUserId" />
+        <result column="CREATE_DATE" property="createDate" />
+        <result column="MODIFY_USER_ID" property="modifyUserId" />
+        <result column="MODIFY_DATE" property="modifyDate" />
+        <result column="WALLET_ID" property="walletId" />
+        <result column="CURRENCY_ID" property="currencyId" />
+        <result column="CREATE_USER_NAME" property="createUserName" />
+        <result column="CURRENCY_NAME" property="currencyName" />
+        <result column="WALLET_NAME" property="walletName" />
+        <result column="EQUIPMENT_COUNT" property="equipmentCount" />
+    </resultMap>
+
+    <select id="queryFroVali" resultMap="BaseResultMap" parameterType="map">
+        select
+            ID,
+            NAME,
+            MINING_POOL,
+            REMARK,
+            DEFAULT_STATUS,
+            CREATE_USER_ID,
+            CREATE_DATE,
+            MODIFY_USER_ID,
+            MODIFY_DATE,
+            WALLET_ID,
+            CURRENCY_ID
+		from divide_group
+		where 1 = 1
+        <if test = "id != null and id != ''">
+            AND ID != #{id}
+        </if>
+        <if test = "name != null and name != ''">
+            AND NAME = #{name}
+        </if>
+        <if test = "currencyId != null and currencyId != ''">
+            AND CURRENCY_ID = #{currencyId}
+        </if>
+        <if test = "walletId != null and walletId != ''">
+            AND WALLET_ID = #{walletId}
+        </if>
+        <if test = "defaultStatus != null and defaultStatus != ''">
+            AND DEFAULT_STATUS = #{defaultStatus}
+        </if>
+    </select>
+
+    <select id="queryList" resultMap="DivideGroupDto" parameterType="map">
+        select
+            (
+                select
+                  count(1)
+                from equipment
+                where
+                  GROUP_ID = g.ID
+            ) AS EQUIPMENT_COUNT,
+            g.ID,
+            g.NAME,
+            g.MINING_POOL,
+            g.REMARK,
+            g.DEFAULT_STATUS,
+            g.CREATE_USER_ID,
+            g.CREATE_DATE,
+            g.MODIFY_USER_ID,
+            g.MODIFY_DATE,
+            g.WALLET_ID,
+            g.CURRENCY_ID,
+            u.NAME AS CREATE_USER_NAME,
+            c.TYPE AS CURRENCY_NAME,
+            w.NAME WALLET_NAME
+        from divide_group g
+        LEFT JOIN user u on g.CREATE_USER_ID = u.ID
+        LEFT JOIN currency c on g.CURRENCY_ID = c.ID
+        LEFT JOIN wallet w on g.WALLET_ID = w.ID
+        where 1 = 1
+        <!--<if test = "name != null and name != ''">-->
+            <!--AND g.NAME = #{name}-->
+        <!--</if>-->
+        <!--<if test = "currencyId != null and currencyId != ''">-->
+            <!--AND g.CURRENCY_ID = #{currencyId}-->
+        <!--</if>-->
+        <!--<if test = "miningPool != null and miningPool != ''">-->
+            <!--AND g.MINING_POOL = #{miningPool}-->
+        <!--</if>-->
+        <!--<if test = "walletId != null and walletId != ''">-->
+            <!--AND g.WALLET_ID = #{walletId}-->
+        <!--</if>-->
+        <!--<if test = "remark != null and remark != ''">-->
+            <!--AND g.REMARK = #{remark}-->
+        <!--</if>-->
+        <!--<if test = "createUserName != null and createUserName != ''">-->
+            <!--AND u.NAME LIKE CONCAT(#{createUserName},'%')-->
+        <!--</if>-->
+        <!--<if test = "currencyName != null and currencyName != ''">-->
+            <!--AND c.TYPE LIKE CONCAT(#{currencyName},'%')-->
+        <!--</if>-->
+        <!--<if test = "walletName != null and walletName != ''">-->
+            <!--AND w.NAME LIKE CONCAT(#{walletName},'%')-->
+        <!--</if>-->
+    </select>
+
+</mapper>

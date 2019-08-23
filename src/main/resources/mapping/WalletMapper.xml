@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mg.sn.mill.mapper.WalletMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.Wallet">
+        <id column="ID" property="id" />
+        <result column="NAME" property="name" />
+        <result column="ADDRESS" property="address" />
+        <result column="CREATE_DATE" property="createDate" />
+        <result column="CREATE_USER_ID" property="createUserId" />
+        <result column="CURRENCY_ID" property="currencyId" />
+    </resultMap>
+
+    <resultMap id="WalletDto" type="com.mg.sn.mill.model.dto.WalletDto">
+        <id column="ID" property="id" />
+        <result column="NAME" property="name" />
+        <result column="ADDRESS" property="address" />
+        <result column="CREATE_DATE" property="createDate" />
+        <result column="CREATE_USER_ID" property="createUserId" />
+        <result column="CURRENCY_ID" property="currencyId" />
+        <result column="CREATE_USER_NAME" property="createUserName" />
+        <result column="CURRENCY_NAME" property="currencyName" />
+    </resultMap>
+
+    <select id="queryList" resultMap="WalletDto" parameterType="map">
+        select
+            w.ID AS ID,
+            w.NAME AS NAME,
+            w.ADDRESS AS ADDRESS,
+            w.CREATE_DATE AS CREATE_DATE,
+            w.CREATE_USER_ID AS CREATE_USER_ID,
+            w.CURRENCY_ID AS CURRENCY_ID,
+            u.NAME AS CREATE_USER_NAME,
+            c.TYPE AS CURRENCY_NAME
+        from wallet w
+        LEFT JOIN user u on w.CREATE_USER_ID = u.ID
+        LEFT JOIN currency c on w.CURRENCY_ID = c.ID
+        where 1 = 1
+        <!--<if test = "name != null and name != ''">-->
+            <!--AND w.NAME LIKE CONCAT(#{name},'%')-->
+        <!--</if>-->
+        <!--<if test = "currencyId != null and currencyId != ''">-->
+            <!--AND w.CURRENCY_ID = #{currencyId}-->
+        <!--</if>-->
+        <!--<if test = "currencyName != null and currencyName != ''">-->
+            <!--AND c.TYPE LIKE CONCAT(#{currencyName},'%')-->
+        <!--</if>-->
+        <!--<if test = "address != null and address != ''">-->
+            <!--AND w.ADDRESS = #{address}-->
+        <!--</if>-->
+    </select>
+
+    <select id="queryForVali" resultMap="BaseResultMap" parameterType="map">
+        select
+            ID,
+            NAME,
+            ADDRESS,
+            CREATE_DATE,
+            CREATE_USER_ID,
+            CURRENCY_ID
+        from wallet
+        where 1 = 1
+        <if test = "name != null and name != ''">
+            AND NAME = #{name}
+        </if>
+        <if test = "currencyId != null and currencyId != ''">
+            AND CURRENCY_ID = #{currencyId}
+        </if>
+        <if test = "address != null and address != ''">
+            AND ADDRESS = #{address}
+        </if>
+    </select>
+
+</mapper>

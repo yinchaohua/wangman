@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mg.sn.mill.mapper.EquipmentMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.Equipment">
+        <id column="ID" property="id" />
+        <result column="IOTID" property="iotid" />
+        <result column="NAME" property="name" />
+        <result column="IP" property="ip" />
+        <result column="RUN_STATUS" property="runStatus" />
+        <result column="CONTACT_USER_PHONE" property="contactUserPhone" />
+        <result column="CONTACT_USER_NAME" property="contactUserName" />
+        <result column="CONTACT_USER_ID" property="contactUserId" />
+        <result column="YTD_ONLINE_HOUR" property="ytdOnlineHour" />
+        <result column="YTD_ONLINE_MINUTE" property="ytdOnlineMinute" />
+        <result column="TOTAL_ONLINE_HOUR" property="totalOnlineHour" />
+        <result column="TOTAL_ONLINE_MINUTE" property="totalOnlineMinute" />
+        <result column="GROUP_ID" property="groupId" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        ID, IOTID, NAME, IP, RUN_STATUS, CONTACT_USER_PHONE, CONTACT_USER_NAME, CONTACT_USER_ID, YTD_ONLINE_HOUR, YTD_ONLINE_MINUTE, TOTAL_ONLINE_HOUR, TOTAL_ONLINE_MINUTE, GROUP_ID
+    </sql>
+    <select id="queryFroVali"  resultMap="BaseResultMap" parameterType="map">
+        select
+            ID,
+            IOTID,
+            NAME,
+            IP,
+            RUN_STATUS,
+            CONTACT_USER_PHONE,
+            CONTACT_USER_NAME,
+            CONTACT_USER_ID,
+            YTD_ONLINE_HOUR,
+            YTD_ONLINE_MINUTE,
+            TOTAL_ONLINE_HOUR,
+            TOTAL_ONLINE_MINUTE,
+            GROUP_ID
+        from equipment
+        where 1 = 1
+        <if test = "groupId != null and groupId != ''">
+            AND GROUP_ID = #{name}
+        </if>
+    </select>
+    <select id="queryPage"  resultMap="BaseResultMap" parameterType="map">
+    SELECT
+        ID,
+        IOTID,
+        NAME,
+        IP,
+        MAC,
+        RUN_STATUS,
+        CONTACT_USER_PHONE,
+        CONTACT_USER_NAME,
+        CONTACT_USER_ID,
+        CONTACT_USER_NO,
+        YTD_ONLINE_HOUR,
+        YTD_ONLINE_MINUTE,
+        TOTAL_ONLINE_HOUR,
+        TOTAL_ONLINE_MINUTE,
+        GROUP_ID,
+        FREEZE,
+        QINGLIAN_USER_ID,
+        QINGLIAN_USER_TOKEN,
+        DATA_POINT_NUM,
+        DEVICE_TYPE,
+        IP_LOCATION,
+        IS_ONLINE,
+        IS_LINKAGE,
+        WIFI_TYPE
+    FROM equipment
+    where 1 = 1
+    <!--<if test = "name != null and name != ''">-->
+        <!--AND NAME = #{name}-->
+    <!--</if>-->
+    <!--<if test = "ip != null and ip != ''">-->
+        <!--AND IP = #{ip}-->
+    <!--</if>-->
+    </select>
+
+</mapper>

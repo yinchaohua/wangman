@@ -1,0 +1,133 @@
+package ${package.ServiceImpl};
+
+import ${package.Entity}.${table.entityName};
+import ${package.Mapper}.${table.mapperName};
+import ${package.Service}.${table.serviceName};
+import ${superServiceImplClassPackage};
+import com.baomidou.mybatisplus.plugins.Page;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.sgcc.uap.common.bean.exception.ServiceException;
+import com.sgcc.uap.common.bean.suppert.*;
+import com.sgcc.uap.common.util.BeanUtilsEx;
+import com.sgcc.uap.rest.support.RequestCondition;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * <p>
+ * $!{table.comment} 服务实现类
+ * </p>
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+@Service
+#if(${kotlin})
+open class ${table.serviceImplName} : ${superServiceImplClass}<${table.mapperName}, ${table.entityName}>(), ${table.serviceName} {
+
+}
+#else
+public class ${table.serviceImplName} extends ${superServiceImplClass}<${table.mapperName}, ${table.entityName}> implements ${table.serviceName} {
+	
+	private final Logger logger = LoggerFactory.getLogger(${table.serviceImplName}.class);
+	
+	@Autowired
+	private $!{table.entityName}Mapper $!{table.entityPath}Mapper;
+
+
+	@Override
+	public BospQueryResultObject getById(String id) throws ServiceException {
+	    try {
+	        ${table.entityName} ent = $!{table.entityPath}Mapper.selectById(id);
+	 		return BospSwitch.dtoSwitch(ent);
+	    } catch (Exception e) {
+	  		logger.error("查询异常",e);
+	        throw new ServiceException("查询异常");
+	    }
+	}
+	 
+    @Override
+    public BospQueryResultObject listPage(RequestCondition requestR) throws ServiceException{
+        try {
+            Page query = new BospQuery(requestR);
+            Map<String,Object > paramMap = (Map<String, Object>) requestR.getFilter();
+            //List<SysParameterListDTO> dto = $!{table.entityPath}Mapper.query(query,paramMap);
+            //query.setRecords(dto);
+            //return BospSwitch.dtoSwitch(query);
+            return null;
+        } catch (Exception e) {
+        	logger.error("分页查询异常",e);
+            throw new ServiceException("分页查询异常");
+        }
+	}
+
+    @Override
+    public BospQueryResultObject list() throws ServiceException {
+       try {
+           Map<String,Object > paramMap = Maps.newHashMap();
+           //List<SysParameterListDTO> dtos = sysParameterMapper.query(paramMap);
+           //return BospSwitch.dtoSwitch(dtos);
+           return null;
+       } catch (Exception e) {
+           logger.error("查询所有数据异常",e);
+           throw new ServiceException("查询所有数据异常");
+        }
+    }
+
+    @Override
+	@Transactional(rollbackFor = Exception.class)
+    public ServiceReturnMap save(BospFormRequestObject formRequest) throws ServiceException{
+       try {
+           ${table.entityName} ent = new ${table.entityName}();
+           BeanUtilsEx.copyProperties(ent, formRequest.getFormObject(),true);
+           //ent.setCreater(formRequest.getUserid());
+           //ent.setDefaultFlag(CommonConstant.DATA_IS_DEL_N);
+           boolean res= this.insert(ent);
+           return ServiceReturnMap.success(res);
+      }catch (Exception e){
+           logger.error("实体保存失败",e);
+           throw new ServiceException("数据保存异常");
+       }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServiceReturnMap update(BospFormRequestObject formRequest) throws ServiceException{
+        try {
+             return ServiceReturnMap.success(true);
+        }catch (Exception e){
+             logger.error("修改失败",e);
+             throw new ServiceException("数据修改异常");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ServiceReturnMap deleteByIds(BospIdRequestObject idRequestObject) throws ServiceException {
+        try {
+            String[] ids =  idRequestObject.getIds();
+            List<String> idList = Arrays.asList(ids);
+            List<${table.entityName}> entList = Lists.newArrayList();
+            for (String id : idList ) {
+               ${table.entityName} ent = new ${table.entityName}();
+               //ent.setParaId(id);
+               //ent.setDelFlag(CommonConstant.DATA_IS_DEL_Y);
+               //ent.setEditer(idRequestObject.getId());
+               entList.add(ent);
+            }
+            boolean res = this.updateBatchById(entList);
+            return ServiceReturnMap.returnObject(res ,  res ? "删除成功":"删除失败") ;
+        } catch (Exception e) {
+            logger.error("数据删除异常",e);
+            throw new ServiceException("数据修改异常");
+        }
+    }
+}
+#end
