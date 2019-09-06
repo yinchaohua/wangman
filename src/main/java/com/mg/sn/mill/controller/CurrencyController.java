@@ -2,6 +2,8 @@ package com.mg.sn.mill.controller;
 
 import com.mg.sn.mill.model.entity.Currency;
 import com.mg.sn.mill.service.ICurrencyService;
+import com.mg.sn.utils.annotation.Auth;
+import com.mg.sn.utils.baseController.StarNodeBaseController;
 import com.mg.sn.utils.result.StarNodeWrappedResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -26,9 +28,10 @@ import java.util.List;
  * @since 2019-08-13
  */
 @Api(description = "币种")
+@Auth
 @RestController
 @RequestMapping("/currencyController")
-public class CurrencyController {
+public class CurrencyController extends StarNodeBaseController {
 
     @Autowired
     private ICurrencyService currencyService;

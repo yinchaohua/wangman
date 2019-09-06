@@ -1,5 +1,6 @@
 package com.mg.sn.config;
 
+import com.mg.sn.interceptor.AuthInterceptor;
 import com.mg.sn.interceptor.NotNullInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -12,8 +13,12 @@ public class MyWebConfig implements WebMvcConfigurer {
     @Autowired
     private NotNullInterceptor notNullInterceptor;
 
+    @Autowired
+    private AuthInterceptor authInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-//        registry.addInterceptor(notNullInterceptor);
+        registry.addInterceptor(authInterceptor);
+        registry.addInterceptor(notNullInterceptor);
     }
 }

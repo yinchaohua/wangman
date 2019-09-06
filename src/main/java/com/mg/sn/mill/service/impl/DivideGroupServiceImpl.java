@@ -78,7 +78,7 @@ public class DivideGroupServiceImpl extends ServiceImpl<DivideGroupMapper, Divid
     }
 
     @Override
-    public DivideGroup save(String name, String currencyId, String miningPool, String walletId, String remark) throws Exception {
+    public DivideGroup save(String name, String currencyId, String miningPool, String walletId, String remark, String userId) throws Exception {
         DivideGroup entity = new DivideGroup();
         entity.setName(name);
         entity.setMiningPool(miningPool);
@@ -86,11 +86,11 @@ public class DivideGroupServiceImpl extends ServiceImpl<DivideGroupMapper, Divid
         //默认状态1:启动;2:未启动
         entity.setDefaultStatus(CommonConstant.DEFAULT_STATUS_NOT_START);
         //创建用户ID
-        entity.setCreateUserId(1);
+        entity.setCreateUserId(Integer.parseInt(userId));
         //创建时间
         entity.setCreateDate(LocalDateTime.now());
         //最后修改人ID
-        entity.setModifyUserId(1);
+        entity.setModifyUserId(Integer.parseInt(userId));
         //最后修改时间
         entity.setModifyDate(LocalDateTime.now());
         //钱包ID
@@ -106,12 +106,12 @@ public class DivideGroupServiceImpl extends ServiceImpl<DivideGroupMapper, Divid
     }
 
     @Override
-    public DivideGroup updateDefaultStatus(String id, String defaultStatus)  throws Exception {
+    public DivideGroup updateDefaultStatus(String id, String defaultStatus, String userId)  throws Exception {
         DivideGroup entity = new DivideGroup();
         entity.setId(Integer.parseInt(id));
         entity.setDefaultStatus(defaultStatus);
         //最后修改人
-        entity.setModifyUserId(1);
+        entity.setModifyUserId(Integer.parseInt(userId));
         //最后修改时间
         entity.setModifyDate(LocalDateTime.now());
         boolean result = this.updateById(entity);
@@ -122,7 +122,7 @@ public class DivideGroupServiceImpl extends ServiceImpl<DivideGroupMapper, Divid
     }
 
     @Override
-    public DivideGroup update (String id, String name, String currencyId, String walletId, String remark) throws Exception {
+    public DivideGroup update (String id, String name, String currencyId, String walletId, String remark, String userId) throws Exception {
         DivideGroup entity = new DivideGroup();
         entity.setId(Integer.parseInt(id));
         entity.setName(name);
@@ -130,7 +130,7 @@ public class DivideGroupServiceImpl extends ServiceImpl<DivideGroupMapper, Divid
         entity.setWalletId(Integer.parseInt(walletId));
         entity.setRemark(remark);
         //最后修改人
-        entity.setModifyUserId(1);
+        entity.setModifyUserId(Integer.parseInt(userId));
         //最后修改时间
         entity.setModifyDate(LocalDateTime.now());
         boolean result = this.updateById(entity);

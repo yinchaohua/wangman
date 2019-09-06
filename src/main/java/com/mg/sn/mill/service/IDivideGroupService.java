@@ -51,18 +51,20 @@ public interface IDivideGroupService extends IService<DivideGroup> {
      * @param miningPool  矿池
      * @param walletId  钱包ID
      * @param remark  备注
+     * @param userId  用户ID
      * @return
      * @throws Exception
      */
-    DivideGroup save (String name, String currencyId, String miningPool, String walletId, String remark) throws Exception;
+    DivideGroup save (String name, String currencyId, String miningPool, String walletId, String remark, String userId) throws Exception;
 
     /**
      * 更新默认状态
      * @param id  分组ID
      * @param defaultStatus  默认状态(1:启动;2:未启动)
+     * @param userId  用户ID
      * @return
      */
-    DivideGroup updateDefaultStatus (String id, String defaultStatus) throws Exception;
+    DivideGroup updateDefaultStatus (String id, String defaultStatus, String userId) throws Exception;
 
     /**
      * 更新分组信息
@@ -71,8 +73,9 @@ public interface IDivideGroupService extends IService<DivideGroup> {
      * @param currencyId  币种ID
      * @param walletId  钱包ID
      * @param remark  备注
+     * @param userId  用户ID
      * @return
      */
-    DivideGroup update (String id, String name, String currencyId, String walletId, String remark) throws Exception;
+    DivideGroup update (String id, String name, String currencyId, String walletId, String remark, String userId) throws Exception;
 
 }

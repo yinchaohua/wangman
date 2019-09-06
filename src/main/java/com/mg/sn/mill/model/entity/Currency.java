@@ -20,7 +20,7 @@ import lombok.ToString;
  * @since 2019-08-09
  */
 @Data
-@TableName("divide_group")
+@TableName("currency")
 @ToString(callSuper=false)
 @EqualsAndHashCode(callSuper=false)
 public class Currency extends Model<Currency> {

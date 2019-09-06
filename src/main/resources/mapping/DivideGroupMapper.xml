@@ -4,7 +4,7 @@
 
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.DivideGroup">
-        <id column="ID" property="id" />
+        <result column="ID" property="id" />
         <result column="NAME" property="name" />
         <result column="MINING_POOL" property="miningPool" />
         <result column="REMARK" property="remark" />
@@ -96,30 +96,30 @@
         LEFT JOIN currency c on g.CURRENCY_ID = c.ID
         LEFT JOIN wallet w on g.WALLET_ID = w.ID
         where 1 = 1
-        <!--<if test = "name != null and name != ''">-->
-            <!--AND g.NAME = #{name}-->
-        <!--</if>-->
-        <!--<if test = "currencyId != null and currencyId != ''">-->
-            <!--AND g.CURRENCY_ID = #{currencyId}-->
-        <!--</if>-->
-        <!--<if test = "miningPool != null and miningPool != ''">-->
-            <!--AND g.MINING_POOL = #{miningPool}-->
-        <!--</if>-->
-        <!--<if test = "walletId != null and walletId != ''">-->
-            <!--AND g.WALLET_ID = #{walletId}-->
-        <!--</if>-->
-        <!--<if test = "remark != null and remark != ''">-->
-            <!--AND g.REMARK = #{remark}-->
-        <!--</if>-->
-        <!--<if test = "createUserName != null and createUserName != ''">-->
-            <!--AND u.NAME LIKE CONCAT(#{createUserName},'%')-->
-        <!--</if>-->
-        <!--<if test = "currencyName != null and currencyName != ''">-->
-            <!--AND c.TYPE LIKE CONCAT(#{currencyName},'%')-->
-        <!--</if>-->
-        <!--<if test = "walletName != null and walletName != ''">-->
-            <!--AND w.NAME LIKE CONCAT(#{walletName},'%')-->
-        <!--</if>-->
+        <if test = "params.name != null and params.name != ''">
+            AND g.NAME = #{params.name}
+        </if>
+        <if test = "params.currencyId != null and params.currencyId != ''">
+            AND g.CURRENCY_ID = #{params.currencyId}
+        </if>
+        <if test = "params.miningPool != null and params.miningPool != ''">
+            AND g.MINING_POOL = #{params.miningPool}
+        </if>
+        <if test = "params.walletId != null and params.walletId != ''">
+            AND g.WALLET_ID = #{params.walletId}
+        </if>
+        <if test = "params.remark != null and params.remark != ''">
+            AND g.REMARK = #{params.remark}
+        </if>
+        <if test = "params.createUserName != null and params.createUserName != ''">
+            AND u.NAME LIKE CONCAT(#{params.createUserName},'%')
+        </if>
+        <if test = "params.currencyName != null and params.currencyName != ''">
+            AND c.TYPE LIKE CONCAT(#{params.currencyName},'%')
+        </if>
+        <if test = "params.walletName != null and params.walletName != ''">
+            AND w.NAME LIKE CONCAT(#{params.walletName},'%')
+        </if>
     </select>
 
 </mapper>

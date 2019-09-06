@@ -46,6 +46,6 @@ public interface IWalletService extends IService<Wallet> {
      * @param address  钱包地址
      * @return
      */
-    Wallet save (String name, String currencyId, String address) throws Exception;
+    Wallet save (String name, String currencyId, String address, String userId) throws Exception;
 
 }

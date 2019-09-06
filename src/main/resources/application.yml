@@ -2,3 +2,53 @@
 spring:
     profiles:
         active: dev
+
+#星节点
+starnode:
+    #固定参数
+    fixedParam: STAR_NODE
+    #调用设备url--测试地址
+#    equipmentUrl: http://xjd.caiba.pro/api/api/synch/device/list
+    #调用用户url--测试地址
+#    userUrl: http://xjd.caiba.pro/api/api/synch/user/list
+    #调用设备url--正式地址
+    equipmentUrl: http://appapi.meitun.ai/api/synch/device/list
+    #调用用户url--正式地址
+    userUrl: http://appapi.meitun.ai/api/synch/user/list
+    #公钥
+    publicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXErdRy/ZamvJBMubIN5P5hTOi56pT6wVIdEHcAf7qbaz6l1TmZq/URjYhlDocbiIOO9FW/yQTf/iiBjwtLjoPgickRMHEcOKouiaVAaDwS4bDexbGRHZzTll8ByXsJ4+G6Fvq+PeoksJEqJNgtR4xIxAeeHXOvof/XUmCdvrFBwIDAQAB
+
+#星际无限
+xjwx:
+    #企业UID(唯一)
+    uid: 10585
+    #企业验证TOKEN(唯一)
+    token: d26522e33d694aaddb693c9c99fbd964
+
+qinglianyunurl:
+    #单个设备详情
+    singleEquipmentDetails: https://api.qinglianyun.com/open/v2/device/singleinfo
+    #设备在线时长
+    equipmentOnlineTime: https://api.qinglianyun.com/open/v2/get/device/online/time
+    #批量控制设备
+    batchControlEquipment: https://api.qinglianyun.com/open/batch/set/api
+    #最新上报数据
+    lastReportData: https://api.qinglianyun.com/open/v2/getdp/api
+
+#矿机操作
+operate:
+    #安装
+    installFile: install.sh
+    #开启
+    startProcess: start.sh
+    #结束
+    stopProcess: stop.sh
+    #控制
+    controlMill: control
+    #矿机列表
+    millList: mill_list
+
+
+
+
+

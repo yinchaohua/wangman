@@ -64,9 +64,9 @@ public class WuhanElectricResourcesGenerator {
 		// 策略配置
 		StrategyConfig strategy = new StrategyConfig();
 		// 此处可以修改为您的表前缀
-		strategy.setInclude(new String[]{"equipment"});
+		strategy.setInclude(new String[]{"user"});
 
-		String myName = "equipment";
+		String myName = "user";
 
 		// 全局大写命名 ORACLE 注意
 		strategy.setCapitalMode(true);

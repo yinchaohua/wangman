@@ -18,7 +18,12 @@ public enum RunStatus {
     /**
      * 删除
      */
-    DEL("3", "删除");
+    DEL("3", "删除"),
+
+    /**
+     * 未分组
+     */
+    NO_GROUP("4", "未分组");
 
     private String code;
     private String describe;

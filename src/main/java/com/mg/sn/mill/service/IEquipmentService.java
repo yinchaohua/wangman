@@ -1,5 +1,6 @@
 package com.mg.sn.mill.service;
 
+import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.mg.sn.mill.model.entity.DivideGroup;
 import com.mg.sn.mill.model.entity.Equipment;
@@ -11,7 +12,7 @@ import java.util.List;
 
 /**
  * <p>
- *  服务类
+ *  设备
  * </p>
  *
  * @author hcy
@@ -24,29 +25,56 @@ public interface IEquipmentService extends IService<Equipment> {
      * @param groupId
      * @return
      */
-    List<Equipment> queryForVali (String groupId)  throws Exception ;
+    List<Equipment> queryForVali (String groupId) throws Exception;
 
     /**
      * 初始化设备信息
-     * @param divideGroup  分组信息
      * @return
      */
-    InitEquipmentResult initEquipment(List<DivideGroup> divideGroup);
+    InitEquipmentResult initEquipment();
 
     /**
      * 分页查询设备信息
      * @param name
      * @param ip
+     * @param type
      * @param pageIndex
      * @param pageSize
      * @return
      */
-    StarNodeResultObject queryPage (String name, String ip, String pageIndex, String pageSize);
+    StarNodeResultObject queryPage (String name, String ip, String type, String pageIndex, String pageSize);
 
     /**
-     * 设置设备分组
-     * @param ids
-     * @param groupId
+     * 设备分组
+     * @param equipmentList  设备信息
+     * @param groupId  分组ID
+     * @return
+     * @throws Exception
      */
-    Collection<Equipment> setDivideGroup (String[] ids, String groupId) throws Exception;
+    InitEquipmentResult setDivideGroup (List<Equipment> equipmentList, String groupId) throws Exception;
+
+    /**
+     * 控制矿机
+     * @param jsonArray  value
+     * @param equipment  设备列表
+     */
+    boolean controlMining (JSONArray jsonArray, List<Equipment> equipment) throws Exception;
+
+    /**
+     * 统计分组
+     * @param divideGroupName  分组名称
+     * @param pageIndex     页码
+     * @param pageSize      页大小
+     * @return
+     * @throws Exception
+     */
+    StarNodeResultObject statisticsDivideGroup (String divideGroupName, String pageIndex, String pageSize) throws Exception;
+
+    /**
+     * 统计设备
+     * @return
+     * @throws Exception
+     */
+    StarNodeResultObject statisticsEquipment () throws Exception;
+
 }

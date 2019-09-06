@@ -24,6 +24,7 @@ public class BodyReaderHttpServletRequestWrapper extends HttpServletRequestWrapp
      */
     public BodyReaderHttpServletRequestWrapper(HttpServletRequest request) {
         super(request);
+//        String name = request.getParameter("name");
         String bodyString = HttpHelper.getBodyString(request);
         body = bodyString.getBytes(Charset.forName("UTF-8"));
     }

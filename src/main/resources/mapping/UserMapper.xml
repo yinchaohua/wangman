@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mg.sn.mill.mapper.UserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.User">
+        <id column="ID" property="id" />
+        <result column="NAME" property="name" />
+        <result column="PASSWORD" property="password" />
+        <result column="SEX" property="sex" />
+        <result column="PHONE" property="phone" />
+        <result column="E_MAIL" property="eMail" />
+        <result column="IDENTITY_CARD_TYPE" property="identityCardType" />
+        <result column="IDENTITY_CARD_NO" property="identityCardNo" />
+        <result column="REGISTER_DATE" property="registerDate" />
+        <result column="LOGIN_DATE" property="loginDate" />
+        <result column="MODIFY_DATE" property="modifyDate" />
+    </resultMap>
+
+    <select id="queryForLogin" resultType="com.mg.sn.mill.model.entity.User">
+        SELECT
+           	ID,
+            NAME,
+            PASSWORD,
+            SEX,
+            PHONE,
+            E_MAIL,
+            IDENTITY_CARD_TYPE,
+            IDENTITY_CARD_NO,
+            REGISTER_DATE,
+            LOGIN_DATE,
+            MODIFY_DATE
+        FROM USER
+        WHERE 1 = 1
+        <if test = "account != null and account != ''">
+        AND name = #{account}
+        </if>
+        <if test = "password != null and password != ''">
+            AND PASSWORD = #{password}
+        </if>
+
+    </select>
+
+
+</mapper>

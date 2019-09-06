@@ -2,12 +2,17 @@ package com.mg.sn.mill.controller;
 
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.mg.sn.ConfigProperties.XjwxConfig;
 import com.mg.sn.mill.model.entity.Currency;
 import com.mg.sn.mill.model.entity.DivideGroup;
 import com.mg.sn.mill.model.entity.Wallet;
 import com.mg.sn.mill.service.ICurrencyService;
 import com.mg.sn.mill.service.IDivideGroupService;
 import com.mg.sn.mill.service.IWalletService;
+import com.mg.sn.utils.annotation.Auth;
+import com.mg.sn.utils.annotation.NotNull;
+import com.mg.sn.utils.annotation.Param;
+import com.mg.sn.utils.baseController.StarNodeBaseController;
 import com.mg.sn.utils.result.StarNodeResultObject;
 import com.mg.sn.utils.result.StarNodeWrappedResult;
 import io.swagger.annotations.Api;
@@ -36,9 +41,10 @@ import java.util.List;
  * @since 2019-08-09
  */
 @Api(description = "钱包模块")
+@Auth("login")
 @RestController
 @RequestMapping("/walletController")
-public class WalletController {
+public class WalletController extends StarNodeBaseController {
 
     private static final Logger log = LoggerFactory.getLogger(WalletController.class);
 
@@ -54,11 +60,18 @@ public class WalletController {
     @ApiOperation(value="保存钱包信息", notes="保存钱包信息")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "name", value = "名称", required = true, dataType = "String", paramType = "query"),
-            @ApiImplicitParam(name = "currencyId", value = "币种ID", required = true, dataType = "String", paramType = "query"),
+            @ApiImplicitParam(name = "currencyId", value = "币种ID", required = false, dataType = "String", paramType = "query"),
             @ApiImplicitParam(name = "address", value = "地址", required = true, dataType = "String", paramType = "query")
+    })
+    @NotNull({
+        @Param(paramKey = "name", message = "currencyId"),
+        @Param(paramKey = "currencyId", message = "currencyId")
     })
     @PostMapping(value = "save" ,produces = "application/json;charset=UTF-8")
     public StarNodeWrappedResult save (String name, String currencyId, String address) {
+
+        //获取用户ID
+        String userId = getUserId();
 
         if (StringUtils.isEmpty(name)) {
             log.error("保存钱包信息失败，钱包名称为空");
@@ -98,7 +111,7 @@ public class WalletController {
 
         Wallet result = null;
         try {
-            result = walletService.save(name, currencyId, address);
+            result = walletService.save(name, currencyId, address, userId);
         } catch (Exception e) {
             log.error("保存钱包信息失败");
             e.printStackTrace();
@@ -121,7 +134,6 @@ public class WalletController {
     public StarNodeWrappedResult query (String name, String currencyId, String currencyName, String address,
                                         @RequestParam(value = "pageIndex", defaultValue = "1")String  pageIndex,
                                         @RequestParam(value = "pageSize", defaultValue = "10")String  pageSize) {
-
         StarNodeResultObject result = walletService.queryList(name, currencyId, currencyName, address, pageIndex, pageSize);
         if (result == null) {
             log.error("查询钱包信息失败");

@@ -46,7 +46,7 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
             map.put("address", address);
             List<WalletDto> result = walletMapper.queryList(page, map);
             page.setRecords(result);
-            return StarNodeSwitch.dtoSwitch(page);
+             return StarNodeSwitch.dtoSwitch(page);
         } catch (Exception e) {
             log.error("查询钱包信息异常", e);
             e.printStackTrace();
@@ -71,13 +71,13 @@ public class WalletServiceImpl extends ServiceImpl<WalletMapper, Wallet> impleme
     }
 
     @Override
-    public Wallet save(String name, String currencyId, String address) throws Exception {
+    public Wallet save(String name, String currencyId, String address, String userId) throws Exception {
         Wallet entity = new Wallet();
         entity.setName(name);
         entity.setAddress(address);
         entity.setCurrencyId(Integer.parseInt(currencyId));
         entity.setCreateDate(LocalDateTime.now());
-        entity.setCreateUserId(1);
+        entity.setCreateUserId(Integer.parseInt(userId));
 
         boolean save = this.save(entity);
         if (!save) {

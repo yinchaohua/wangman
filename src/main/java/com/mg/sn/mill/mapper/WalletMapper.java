@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mg.sn.mill.model.dto.WalletDto;
 import com.mg.sn.mill.model.entity.Wallet;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
@@ -29,7 +30,7 @@ public interface WalletMapper extends BaseMapper<Wallet> {
      * @param map
      * @return
      */
-    List<WalletDto> queryList (Page page, Map<String, Object> map);
+    List<WalletDto> queryList (Page page, @Param("params") Map<String, Object> map);
 
     /**
      * 验证钱包信息

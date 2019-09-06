@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mg.sn.mill.mapper.EquipmentSoftPackageMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.mg.sn.mill.model.entity.EquipmentSoftPackage">
+        <id column="ID" property="id" />
+        <result column="EQUIPMENT_ID" property="equipmentId" />
+        <result column="SOFT_PACKAGE_ID" property="softPackageId" />
+        <result column="MINING_ID" property="miningId" />
+    </resultMap>
+
+    <select id="query" resultType="com.mg.sn.mill.model.entity.EquipmentSoftPackage">
+        SELECT
+            ID,
+            EQUIPMENT_ID,
+            SOFT_PACKAGE_ID,
+            MINING_ID
+        FROM  equipment_soft_package
+        WHERE 1 = 1
+        <if test = "equipmentId != null and equipmentId != ''">
+            AND EQUIPMENT_ID = #{equipmentId}
+        </if>
+        <if test = "softPackageId != null and softPackageId != ''">
+            AND SOFT_PACKAGE_ID = #{softPackageId}
+        </if>
+        <if test = "miningId != null and miningId != ''">
+            AND MINING_ID = #{miningId}
+        </if>
+    </select>
+
+
+</mapper>

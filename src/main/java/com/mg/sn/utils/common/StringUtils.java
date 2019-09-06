@@ -1,5 +1,7 @@
 package com.mg.sn.utils.common;
 
+import java.util.UUID;
+
 public class StringUtils {
 
     /**
@@ -13,5 +15,18 @@ public class StringUtils {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 生成UUID
+     * @return
+     */
+    public static String uuid () {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+    
+    public static void main (String[] args) {
+        String uuid = uuid();
+        System.out.println(uuid);
     }
 }

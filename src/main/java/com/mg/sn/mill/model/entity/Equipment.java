@@ -135,7 +135,7 @@ public class Equipment extends Model<Equipment> {
     @TableField(value = "IP_LOCATION")
     private String ipLocation;
     /**
-     * 是否在线
+     * 是否在线 true:是;false:不
      */
     @TableField(value = "IS_ONLINE")
     private String isOnline;
@@ -149,6 +149,17 @@ public class Equipment extends Model<Equipment> {
      */
     @TableField(value = "WIFI_TYPE")
     private String wifiType;
+
+    /**
+     * 矿机运行状态
+     */
+    @TableField(value = "MINING_RUN_STATUS")
+    private String miningRunStatus;
+
+    /**
+     * 软件包ID
+     */
+    private Integer softPackageId;
 
     @Override
     protected Serializable pkVal() {

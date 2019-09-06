@@ -11,8 +11,10 @@ import com.mg.sn.mill.service.IDivideGroupService;
 import com.mg.sn.mill.service.IEquipmentService;
 import com.mg.sn.mill.service.IWalletService;
 import com.mg.sn.utils.Enum.DefaultStatusEnum;
+import com.mg.sn.utils.annotation.Auth;
 import com.mg.sn.utils.annotation.NotNull;
 import com.mg.sn.utils.annotation.Param;
+import com.mg.sn.utils.baseController.StarNodeBaseController;
 import com.mg.sn.utils.redis.RedisUtil;
 import com.mg.sn.utils.result.StarNodeResultObject;
 import com.mg.sn.utils.result.StarNodeWrappedResult;
@@ -41,9 +43,10 @@ import java.util.List;
  * @since 2019-08-12
  */
 @Api(description = "分组模块")
+@Auth
 @RestController
 @RequestMapping("/groupController")
-public class DivideGroupController {
+public class DivideGroupController extends StarNodeBaseController {
 
     private static final Logger log = LoggerFactory.getLogger(DivideGroupController.class);
 
@@ -75,6 +78,9 @@ public class DivideGroupController {
     })
     @PostMapping(value = "save" ,produces = "application/json;charset=UTF-8")
     public StarNodeWrappedResult save (String name, String currencyId, String miningPool, String walletId, String remark) {
+
+        //获取用户ID
+        String userId = getUserId();
 
         if (StringUtils.isEmpty(name)) {
             log.error("保存分组信息失败， 分组名称为空");
@@ -127,12 +133,12 @@ public class DivideGroupController {
         List<DivideGroup> divideGroupList = divideGroupService.queryFroVali("", "", currencyId, walletId, "");
         if (divideGroupList.size() > 0) {
             log.error("保存分组信息失败， 币种和钱包地址已经存在");
-            return StarNodeWrappedResult.failWrapedResult("保存分组信息失败， 币种和钱包地址已经存在");
+            return StarNodeWrappedResult.failWrapedResult("保存分组信息失败， 分组中币种和钱包地址已经存在");
         }
 
         DivideGroup result = null;
         try {
-            result = divideGroupService.save(name, currencyId, miningPool, walletId, remark);
+            result = divideGroupService.save(name, currencyId, miningPool, walletId, remark, userId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("保存分组信息失败， 添加分组入库失败");
@@ -157,10 +163,6 @@ public class DivideGroupController {
             @ApiImplicitParam(name = "pageSize", value = "页大小", required = false, dataType = "String", paramType = "query"),
             @ApiImplicitParam(name = "remark", value = "备注", required = false, dataType = "String", paramType = "query")
     })
-//    @NotNull({
-//            @Param(paramKey = "name", message = "currencyId"),
-//            @Param(paramKey = "currencyId", message = "currencyId")
-//    })
     @PostMapping(value = "query" ,produces = "application/json;charset=UTF-8")
     public StarNodeWrappedResult query (String name, String currencyId, String currencyName, String miningPool, String walletId, String walletName, String remark, String createUserId, String createUserName,
                                         @RequestParam(value = "pageIndex", defaultValue = "1")String  pageIndex,
@@ -207,10 +209,6 @@ public class DivideGroupController {
         }
 
         List<Wallet> result = walletService.queryForVali("", currencyId, "");
-        if (result == null) {
-            log.error("分组选择钱包地址失败");
-            return StarNodeWrappedResult.failWrapedResult("分组选择钱包地址失败");
-        }
 
         return StarNodeWrappedResult.successWrapedResult("分组选择钱包地址成功", result);
     }
@@ -222,6 +220,9 @@ public class DivideGroupController {
     })
     @PostMapping(value = "setDefaultStatus" ,produces = "application/json;charset=UTF-8")
     public StarNodeWrappedResult setDefaultStatus (String id, String defaultStatus) {
+
+        //获取用户ID
+        String userId = getUserId();
 
         if (StringUtils.isEmpty(id)) {
             log.error("设置默认状态失败， 钱包分组ID为空");
@@ -259,7 +260,7 @@ public class DivideGroupController {
 
             DivideGroup result = null;
             try {
-                result = divideGroupService.updateDefaultStatus(id, defaultStatus);
+                result = divideGroupService.updateDefaultStatus(id, defaultStatus, userId);
             } catch (Exception e) {
                 e.printStackTrace();
                 //删除默认状态
@@ -274,7 +275,7 @@ public class DivideGroupController {
         //状态关闭
         DivideGroup result = null;
         try {
-            result = divideGroupService.updateDefaultStatus(id, defaultStatus);
+            result = divideGroupService.updateDefaultStatus(id, defaultStatus, userId);
             if (redisUtil.hasKey(DEFAULT_STATUS_REDIS_KEY)) {
                 //删除默认状态
                 redisUtil.setRemove(DEFAULT_STATUS_REDIS_KEY, DefaultStatusEnum.OPEN.getCode());
@@ -345,6 +346,9 @@ public class DivideGroupController {
     })
     @PostMapping(value = "update" ,produces = "application/json;charset=UTF-8")
     public StarNodeWrappedResult update (String id, String name, String currencyId, String walletId, String remark){
+
+        //获取用户ID
+        String userId = getUserId();
 
         if (StringUtils.isEmpty(id)) {
             log.error("编辑分组信息失败， 分组ID为空");
@@ -427,7 +431,7 @@ public class DivideGroupController {
 
         DivideGroup result = null;
         try {
-            result = divideGroupService.update(id, name, currencyId, walletId, remark);
+            result = divideGroupService.update(id, name, currencyId, walletId, remark, userId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("删除分组失败, 更新分组数据失败");

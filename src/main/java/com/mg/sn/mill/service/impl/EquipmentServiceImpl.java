@@ -5,16 +5,22 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.mg.sn.ConfigProperties.OperateConfig;
+import com.mg.sn.ConfigProperties.QingLianYunUrlConfig;
+import com.mg.sn.ConfigProperties.StarNodeConfig;
+import com.mg.sn.ConfigProperties.XjwxConfig;
 import com.mg.sn.mill.mapper.DivideGroupMapper;
 import com.mg.sn.mill.mapper.EquipmentMapper;
 import com.mg.sn.mill.model.bo.*;
-import com.mg.sn.mill.model.dto.EquipmentDto;
+import com.mg.sn.mill.model.dto.DivideGroupStatisticsDto;
+import com.mg.sn.mill.model.dto.EquipmentStatisticsDto;
 import com.mg.sn.mill.model.dto.QingLianEquipmentDetailDto;
-import com.mg.sn.mill.model.dto.WalletDto;
+import com.mg.sn.mill.model.entity.*;
 import com.mg.sn.mill.model.entity.Currency;
-import com.mg.sn.mill.model.entity.DivideGroup;
-import com.mg.sn.mill.model.entity.Equipment;
-import com.mg.sn.mill.service.IEquipmentService;
+import com.mg.sn.mill.service.*;
+import com.mg.sn.utils.Enum.DefaultStatusEnum;
+import com.mg.sn.utils.Enum.DelFlag;
+import com.mg.sn.utils.Enum.MiningRunStatus;
 import com.mg.sn.utils.Enum.RunStatus;
 import com.mg.sn.utils.common.StringUtils;
 import com.mg.sn.utils.common.TimeUtils;
@@ -22,7 +28,6 @@ import com.mg.sn.utils.common.TypeConvert;
 import com.mg.sn.utils.httpclient.HttpClientResult;
 import com.mg.sn.utils.httpclient.HttpClientService;
 import com.mg.sn.utils.redis.RedisUtil;
-import com.mg.sn.utils.result.CommonConstant;
 import com.mg.sn.utils.result.InitEquipmentResult;
 import com.mg.sn.utils.result.StarNodeResultObject;
 import com.mg.sn.utils.result.StarNodeSwitch;
@@ -35,11 +40,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.rmi.ServerException;
 import java.security.interfaces.RSAPublicKey;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -59,31 +62,35 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
 	
 	private final Logger log = LoggerFactory.getLogger(EquipmentServiceImpl.class);
 
-	//星节点接口调用特殊字符
-	private static final String STAR_NODE = "STAR_NODE";
-	//星节点设备调用URL
-    private static final String STAR_NODE_EQUIPMENT_URL = "http://xjd.caiba.pro/api/api/synch/device/list";
-	//星节点用户调用URL
-    private static final String STAR_NODE_USER_URL = "http://xjd.caiba.pro/api/api/synch/user/list";
-    //星节点调用公钥
-    private static final String STAR_NODE_PUBLIC_KEY = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXErdRy/ZamvJBMubIN5P5hTOi56pT6wVIdEHcAf7qbaz6l1TmZq/URjYhlDocbiIOO9FW/yQTf/iiBjwtLjoPgickRMHEcOKouiaVAaDwS4bDexbGRHZzTll8ByXsJ4+G6Fvq+PeoksJEqJNgtR4xIxAeeHXOvof/XUmCdvrFBwIDAQAB";
+    @Autowired
+    private StarNodeConfig starNodeConfig;
 
-    //企业UID(唯一)
-    private static final String XJWX_UID = "10585";
-    //企业验证TOKEN(唯一)
-    private static final String XJWX_TOKEN = "d26522e33d694aaddb693c9c99fbd964";
-    //青莲云获取单个设备URL
-    private static final String QINGLIAN_DEVICE_SINGLEINFO = "https://api.qinglianyun.com/open/v2/device/singleinfo";
+    @Autowired
+    private XjwxConfig xjwxConfig;
 
-    //获取设备在线时间
-    private static final String QINGLIAN_DEVICE_EQUIPMENT_ONLINE_TIME = "https://api.qinglianyun.com/open/v2/get/device/online/time";
+    @Autowired
+    private OperateConfig operateConfig;
 
+    @Autowired
+    private QingLianYunUrlConfig qingLianYunUrlConfig;
 
 	@Autowired
 	private EquipmentMapper equipmentMapper;
 
     @Resource
     private DivideGroupMapper divideGroupMapper;
+
+    @Autowired
+    private IDivideGroupService divideGroupService;
+
+    @Autowired
+    private ICurrencyService currencyService;
+
+    @Autowired
+    private ISoftPackageService softPackageService;
+
+    @Autowired
+    private IEquipmentSoftPackageService equipmentSoftPackageService;
 
     @Autowired
     private RedisUtil redisUtil;
@@ -98,14 +105,8 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public InitEquipmentResult initEquipment(List<DivideGroup> divideGroup) {
-
-        boolean defaultExsit = false;
-        //如果存在设置true
-        if (divideGroup.size() == 1) {
-            defaultExsit = true;
-        }
+//    @Transactional(rollbackFor = Exception.class)
+    public InitEquipmentResult initEquipment() {
 
         //返回对象
         InitEquipmentResult initEquipmentResult = new InitEquipmentResult();
@@ -125,22 +126,29 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
         }
 
         //获取星节点设备信息
-        InitEquipmentResult starNodeEquipmentResult = invokeStarNodeEquipmentList(starNodeHeader, initEquipmentResult);
+        InitEquipmentResult starNodeEquipmentResult = invokeStarNode(starNodeConfig.getEquipmentUrl(), starNodeHeader, initEquipmentResult);
         //获取设备失败
         if (!starNodeEquipmentResult.isSucc()) {
+            starNodeEquipmentResult.setMessage("调用星节点设备接口失败, " + starNodeEquipmentResult.getMessage());
             return starNodeEquipmentResult;
         }
-        //获取设备成功
-        List<StarNodeEquipmentBo> starNodeEquipmentBoList = (List<StarNodeEquipmentBo>) starNodeEquipmentResult.getObj();
+        //获取设备信息
+        JSONArray starNodeEquipmentJsonArray = (JSONArray) starNodeEquipmentResult.getObj();
+        List<StarNodeEquipmentBo> starNodeEquipmentBoList = JSONObject.parseArray(starNodeEquipmentJsonArray.toJSONString(), StarNodeEquipmentBo.class);
 
         //获取星节点用户信息
-        InitEquipmentResult StarNodeUserResult = invokeStarNodeUserList(starNodeHeader, initEquipmentResult);
+        InitEquipmentResult StarNodeUserResult = invokeStarNode(starNodeConfig.getUserUrl(), starNodeHeader, initEquipmentResult);
         //获取设备失败
         if (!StarNodeUserResult.isSucc()) {
+            starNodeEquipmentResult.setMessage("调用星节点用户接口失败, " + starNodeEquipmentResult.getMessage());
             return StarNodeUserResult;
         }
-        //获取用户成功
-        List<StarNodeUserBo> starNodeUserBoList = (List<StarNodeUserBo>) StarNodeUserResult.getObj();
+
+        //获取用户信息
+        JSONArray starNodeUserJsonArray = (JSONArray) StarNodeUserResult.getObj();
+        List<StarNodeUserBo> starNodeUserBoList = JSONObject.parseArray(starNodeUserJsonArray.toJSONString(), StarNodeUserBo.class);
+
+        //更新矿机列表
 
         //整合设备和用户信息
         ArrayList<Equipment> starNodeEquipmentList = new ArrayList<Equipment>();
@@ -182,20 +190,23 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
 
         //调用青莲云接口
 
-        //调用青莲云接口获取设备详细信息
-        ArrayList<Equipment> removeList = new ArrayList<>();
+        //调用青莲云接口获取设备详细信息、
+        //移除设备list
+        ArrayList<Equipment> removeList = new ArrayList<Equipment>();
+        //失联设备list
+        ArrayList<Equipment> lostInList = new ArrayList<Equipment>();
         for (Equipment starNodeEquipment : starNodeEquipmentList) {
             //获取当前时间戳
             long currentTime = TimeUtils.getCurrentTime();
             //生成32位大写MD5秘钥(uid + token + tt)
-            String sign = getQingLianSign(XJWX_UID, XJWX_TOKEN, currentTime);
+            String sign = getQingLianSign(xjwxConfig.getUid(), xjwxConfig.getToken(), currentTime);
             Integer qingLianUserId = starNodeEquipment.getQinglianUserId();
             String qingLianUserToken = starNodeEquipment.getQinglianUserToken();
             String mac = starNodeEquipment.getMac();
 
             HashMap<String, Object> qingLianMap = new HashMap<>();
             //用户ID
-            qingLianMap.put("uid", XJWX_UID);
+            qingLianMap.put("uid", xjwxConfig.getUid());
             //当前时间戳
             qingLianMap.put("tt", currentTime);
             //用户签名(30位)
@@ -211,16 +222,11 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
             List<NameValuePair> qingLianBody = HttpClientService.getParams(qingLianMap);qingLianBody.indexOf(qingLianBody);
 
             //获取单个设备详细信息
-            HttpClientResult qingLianResult = HttpClientService.sendPost(QINGLIAN_DEVICE_SINGLEINFO, null, qingLianBody, "https");
-            if (qingLianResult == null) {
-                log.error("获取设备信息失败, 调用青莲云单个设备返回结果为空 参数 {} ", qingLianBody);
-                removeList.add(starNodeEquipment);
-                continue;
-            }
+            HttpClientResult qingLianResult = HttpClientService.sendPost(qingLianYunUrlConfig.getSingleEquipmentDetails(), null, qingLianBody, "https");
 
             InitEquipmentResult convertResult = qingLianTypeConvert(qingLianResult, "singleinfo", initEquipmentResult);
             if (!convertResult.isSucc()) {
-                log.error("获取设备信息失败, 调用青莲云单个设备失败 参数 {} ", qingLianBody);
+                log.error(convertResult.getMessage());
                 removeList.add(starNodeEquipment);
 //                return convertResult;
                 continue;
@@ -233,7 +239,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
             HashMap<String, Object> onlineTimeMap = new HashMap<>();
             onlineTimeMap.put("mac", mac);
             onlineTimeMap.put("date", TimeUtils.getDate(null));
-            onlineTimeMap.put("uid", XJWX_UID);
+            onlineTimeMap.put("uid", xjwxConfig.getUid());
             onlineTimeMap.put("tt", currentTime);
             onlineTimeMap.put("sign", sign);
 
@@ -241,20 +247,23 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
             List<NameValuePair> onlineTimeBody = HttpClientService.getParams(onlineTimeMap);
 
             //获取设备在线时间
-            HttpClientResult onlineTimeResult = HttpClientService.sendPost(QINGLIAN_DEVICE_EQUIPMENT_ONLINE_TIME, null, onlineTimeBody, "https");
+            HttpClientResult onlineTimeResult = HttpClientService.sendPost(qingLianYunUrlConfig.getEquipmentOnlineTime(), null, onlineTimeBody, "https");
             if (onlineTimeResult == null) {
                 log.error("获取设备信息失败, 获取设备在线时长信息为空, 参数 {} ", onlineTimeBody);
                 continue;
             }
 
-            InitEquipmentResult onlineConvertResult = qingLianTypeConvert(onlineTimeResult, "data", initEquipmentResult);
-            if (!onlineConvertResult.isSucc()) {
-//                return onlineConvertResult;
-                continue;
-            }
-            //转换成功
-            JSON onlineTimeJson = (JSON) onlineConvertResult.getObj();
-            List<QingLianOnlineTimeBo> qingLianOnlineTime = JSONObject.parseArray(onlineTimeJson.toString(), QingLianOnlineTimeBo.class);
+//            InitEquipmentResult onlineConvertResult = qingLianTypeConvert(onlineTimeResult, "data", initEquipmentResult);
+//            if (!onlineConvertResult.isSucc()) {
+////                return onlineConvertResult;
+//                continue;
+//            }
+//            //转换成功
+//            Object data = onlineConvertResult.getObj();
+//            if (data == null) {
+//
+//            }
+//            List<QingLianOnlineTimeBo> qingLianOnlineTime = JSONObject.parseArray(onlineTimeJson.toString(), QingLianOnlineTimeBo.class);
 
             //设备的数据点数目
             starNodeEquipment.setDataPointNum(Integer.parseInt(qingLianEquipmentDetailDto.getDataPointNum()));
@@ -278,31 +287,43 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
             }
             //设备的 wifi 芯片
             starNodeEquipment.setWifiType(qingLianEquipmentDetailDto.getWifiType());
-            //设备默认分组
-            if (defaultExsit) {
-                starNodeEquipment.setGroupId(divideGroup.get(0).getId());
+            if (StringUtils.stringEquals(starNodeEquipment.getIsOnline(), "false")) {
+                lostInList.add(starNodeEquipment);
             }
         }
 
         //移除报错数据
-        starNodeEquipmentList.removeAll(removeList);
+//        starNodeEquipmentList.removeAll(removeList);
+        //TODO 失联设备不参与分组
 
         //新增的设备信息
         ArrayList<Equipment> addEquipment = new ArrayList<Equipment>();
         ArrayList<Equipment> updateEquipment = new ArrayList<Equipment>();
         List<Equipment> oldDataList = this.list();
-        redisUtil.set("EQUIPMENT_LIST_KEY", oldDataList, 3000);
-        List<Equipment> equipment_list_key = (List<Equipment>)redisUtil.get("EQUIPMENT_LIST_KEY");
+//        redisUtil.set("EQUIPMENT_LIST_KEY", oldDataList, 3000);
+//        List<Equipment> equipment_list_key = (List<Equipment>)redisUtil.get("EQUIPMENT_LIST_KEY");
 
         //初始化(表中不存在数据)
-        if (equipment_list_key.size() == 0) {
+        if (oldDataList.size() == 0) {
             boolean result = this.saveBatch(starNodeEquipmentList);
             if (!result) {
                 log.error("初始化设备信息失败, 保存设备信息失败 {}", starNodeEquipmentList);
-                initEquipmentResult.setCode("13");
+                initEquipmentResult.setCode("14");
                 initEquipmentResult.setMessage("初始化设备信息失败, 保存设备信息失败");
                 return initEquipmentResult;
             }
+            //获取所有设备信息
+            List<Equipment> list = this.list();
+
+            //添加默认分组
+            InitEquipmentResult EquipmentResult = addDefaultGroup(list, initEquipmentResult);
+            if (!EquipmentResult.isSucc()) {
+                log.error("初始化设备失败, 新添加设备数据 (表中数据为空) 默认分组失败 list: {}", list);
+                initEquipmentResult.setCode("16");
+                initEquipmentResult.setMessage("初始化设备信息失败, 新添加设备数据 (表中数据为空) 默认分组失败");
+                return initEquipmentResult;
+            }
+
         } else {    //存在数据：更新旧数据; 插入新数据
             HashMap<String, Equipment> stringEquipmentHashMap = new HashMap<String, Equipment>(oldDataList.size());
             //key为mac(唯一), value为原来设备信息
@@ -327,19 +348,100 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                     //设备是否联动
                     oldEquipment.setIsLinkage(newEquipment.getIsLinkage());
                     //昨日在线小时
-//                    oldEquipment.setYtdOnlineHour(newEquipment.getYtdOnlineHour());
-//                    //昨日在线分钟
-//                    oldEquipment.setYtdOnlineMinute(newEquipment.getTotalOnlineMinute());
-//                    //累计在线小时
-//                    oldEquipment.setTotalOnlineHour(newEquipment.getTotalOnlineHour());
-//                    //累计在线分钟
-//                    oldEquipment.setTotalOnlineMinute(newEquipment.getYtdOnlineMinute());
+                    oldEquipment.setYtdOnlineHour(newEquipment.getYtdOnlineHour());
+                    //昨日在线分钟
+                    oldEquipment.setYtdOnlineMinute(newEquipment.getTotalOnlineMinute());
+                    //累计在线小时
+                    oldEquipment.setTotalOnlineHour(newEquipment.getTotalOnlineHour());
+                    //累计在线分钟
+                    oldEquipment.setTotalOnlineMinute(newEquipment.getYtdOnlineMinute());
                     updateEquipment.add(oldEquipment);
                 }
             }
 
-            //更新已经存在设备数据
+            //更新已经存在设备数据(旧数据更新挖矿状态)
             if (updateEquipment.size() != 0) {
+                //获取矿机列表
+                JSONArray objectArray = new JSONArray();
+                for (Equipment equipment : updateEquipment) {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("mac", equipment.getMac());
+                    jsonObject.put("key", operateConfig.getMillList());
+                    jsonObject.put("value", "矿机列表");
+                    objectArray.add(jsonObject);
+                }
+                HttpClientResult httpClientResult = executeKey(objectArray);
+                JSONObject object = httpClientResult.getObject();
+                QingLianBo qingLianBo = JSON.parseObject(object.toString(), QingLianBo.class);
+                if (!httpClientResult.isSuccess() || !qingLianBo.isSucc()) {
+                    log.error("初始化设备失败, 更新旧数据时调用矿机列表失败");
+                    initEquipmentResult.setCode("19");
+                    initEquipmentResult.setMessage("初始化设备信息失败, 更新旧数据时调用矿机列表失败");
+                    return initEquipmentResult;
+                }
+
+                ArrayList<EquipmentSoftPackage> updateEquipmentSoftPackageList = new ArrayList<EquipmentSoftPackage>();
+                //获取最新上报数据
+                for (Equipment equipment : updateEquipment) {
+                    if (equipment.getGroupId() != null && equipment.getSoftPackageId() != null) {
+                        HttpClientResult lastReportDataResult = lastReportData(equipment.getMac());
+//                        HttpClientResult lastReportDataResult = lastReportData("14:6b:9c:f6:03:f8");
+                        JSONObject lastReportDataObject = lastReportDataResult.getObject();
+                        QingLianBo lastReportDataQingLianBo = JSON.parseObject(lastReportDataObject.toString(), QingLianBo.class);
+                        if (!lastReportDataResult.isSuccess() || !lastReportDataQingLianBo.isSucc()) {
+                            log.error("初始化设备失败, 更新旧数据时获取最新上报数据失败");
+                            initEquipmentResult.setCode("20");
+                            initEquipmentResult.setMessage("初始化设备信息失败, 更新旧数据时获取最新上报数据失败");
+                            return initEquipmentResult;
+                        }
+                        String data = lastReportDataQingLianBo.getData();
+                        JSONObject jsonObject = JSONObject.parseObject(data);
+                        String mill_list = jsonObject.get("mill_list").toString();
+                        //矿机列表为空不更新
+                        if (com.baomidou.mybatisplus.core.toolkit.StringUtils.isNotEmpty(mill_list)) {
+                            String substring = mill_list.substring(1, mill_list.length() - 1);
+                            String[] split = substring.split(",");
+                            String fileName = split[0];
+                            String version = split[1];
+                            String miningRunstatus = split[2].substring(0, 1);
+                            String miningId = split[3];
+                            equipment.setMiningRunStatus(miningRunstatus);
+                            List<EquipmentSoftPackage> equipmentSoftPackageList;
+                            try {
+                                equipmentSoftPackageList = equipmentSoftPackageService.query(String.valueOf(equipment.getId()), String.valueOf(equipment.getSoftPackageId()), "");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                log.error("初始化设备失败, 更新旧设备时获取设备和软件包关联信息失败");
+                                initEquipmentResult.setCode("21");
+                                initEquipmentResult.setMessage("初始化设备信息失败, 更新旧设备时获取设备和软件包关联信息失败");
+                                return initEquipmentResult;
+                            }
+                            if (equipmentSoftPackageList.size() == 0) {
+                                log.error("初始化设备失败, 更新旧设备时设备和软件包关联信息不存在");
+                                initEquipmentResult.setCode("22");
+                                initEquipmentResult.setMessage("初始化设备信息失败, 更新旧设备时设备和软件包关联信息不存在");
+                                return initEquipmentResult;
+                            }
+                            EquipmentSoftPackage equipmentSoftPackage = equipmentSoftPackageList.get(0);
+                            equipmentSoftPackage.setMiningId(miningId);
+                            updateEquipmentSoftPackageList.add(equipmentSoftPackage);
+                        }
+                    }
+                }
+
+                //更新设备和软件包
+                if (updateEquipmentSoftPackageList != null) {
+                    try {
+                        List<EquipmentSoftPackage> update = equipmentSoftPackageService.update(updateEquipmentSoftPackageList);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        initEquipmentResult.setCode("22");
+                        initEquipmentResult.setMessage("初始化设备信息失败, 更新旧设备时设备和软件包关联信息不存在");
+                        return initEquipmentResult;
+                    }
+                }
+
+
                 boolean updateResult = this.updateBatchById(updateEquipment);
                 if (!updateResult) {
                     log.error("初始化设备失败, 已存在数据: {} 更新失败", updateEquipment);
@@ -349,13 +451,21 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                 }
             }
 
-            //添加新设备数据
+            //添加新设备数据(安装矿机文件夹)
             if (addEquipment.size() != 0) {
                 boolean addResult = this.saveBatch(addEquipment);
                 if (!addResult) {
                     log.error("初始化设备失败, 新添加设备数据: {} 插入失败", addEquipment);
                     initEquipmentResult.setCode("15");
                     initEquipmentResult.setMessage("初始化设备信息失败, 新添加设备数据插入失败");
+                    return initEquipmentResult;
+                }
+                //添加默认分组
+                InitEquipmentResult initAddEquipmentResult = addDefaultGroup(addEquipment, initEquipmentResult);
+                if (!initAddEquipmentResult.isSucc()) {
+                    log.error("初始化设备失败, 新添加设备数据默认分组失败 list: {}", addEquipment);
+                    initEquipmentResult.setCode("16");
+                    initEquipmentResult.setMessage("初始化设备信息失败, 新添加设备数据默认分组失败");
                     return initEquipmentResult;
                 }
             }
@@ -367,12 +477,20 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
     }
 
     @Override
-    public StarNodeResultObject queryPage(String name, String ip, String pageIndex, String pageSize) {
+    public StarNodeResultObject queryPage(String name, String ip, String type, String pageIndex, String pageSize) {
         try {
             Page page = new Page(Long.parseLong(pageIndex), Long.parseLong(pageSize));
             HashMap<String, Object> map = new HashMap<String, Object>();
             map.put("name", name);
             map.put("ip", ip);
+            //正常
+            if (StringUtils.stringEquals(type, RunStatus.NORMAL.getCode())) {
+                map.put("runStatus", type);
+            } else if (StringUtils.stringEquals(type, RunStatus.MISS.getCode())) {  //失联
+                map.put("runStatus", type);
+            } else if (StringUtils.stringEquals(type, RunStatus.NO_GROUP.getCode())) {  //未分组
+                map.put("notGroup", type);
+            }
             List<Equipment> result = equipmentMapper.queryPage(page, map);
             page.setRecords(result);
             return StarNodeSwitch.dtoSwitch(page);
@@ -385,32 +503,129 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
     }
 
     @Override
-    public Collection<Equipment> setDivideGroup(String[] ids, String groupId) throws Exception {
-        Collection<Equipment> equipment = this.listByIds(Arrays.asList(ids));
+    public InitEquipmentResult setDivideGroup(List<Equipment> equipmentList, String groupId) throws Exception {
 
-        for (Equipment Equipment : equipment) {
-            Equipment.setGroupId(Integer.parseInt(groupId));
-        }
-//        //需要添加分组设备
-//        ArrayList<Equipment>  addGroupList = new ArrayList<Equipment>();
-//        //需要更新分组设备
-//        ArrayList<Equipment>  updateGroupList = new ArrayList<Equipment>();
-//        for (Equipment Equipment : equipment) {
-//            //设备不存在分组添加分组
-//            if (Equipment.getGroupId() == null) {
-//                Equipment.setGroupId(Integer.parseInt(groupId));
-//                addGroupList.add(Equipment);
-//            } else {  //不为空， 停止矿机再分组
-//                updateGroupList.add(Equipment);
-//            }
-//        }
+        InitEquipmentResult initEquipmentResult = new InitEquipmentResult();
+        //批量控制矿机value
+        JSONArray jsonArray = new JSONArray();
+        //需要添加设备软件包
+        ArrayList<EquipmentSoftPackage> addEquipmentSoftPackageList = new ArrayList<>();
+        for (Equipment equipment : equipmentList) {
+            //获取分组信息
+            DivideGroup divideGroupId = divideGroupService.getById(groupId);
+            //获取币种ID
+            Currency currencyEntity = currencyService.getById(divideGroupId.getCurrencyId());
+            //获取软件包
+            List<SoftPackage> softPackageEntity;
+            try {
+                softPackageEntity = softPackageService.query(currencyEntity.getType(), "", "", DelFlag.NOT_DEL.getCode());
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("设备分组失败, 获取软件包失败");
+                initEquipmentResult.setCode("1");
+                initEquipmentResult.setMessage("设备分组失败, 获取软件包失败");
+                return initEquipmentResult;
+            }
+            if (softPackageEntity == null) {
+                log.error("设备分组失败, 软件包数据为空");
+                initEquipmentResult.setCode("2");
+                initEquipmentResult.setMessage("设备分组失败, 软件包数据为空");
+                return initEquipmentResult;
+            }
 
-        //添加分组设备
-        boolean addGroupResult = this.updateBatchById(equipment);
-        if (!addGroupResult) {
-            throw new ServerException("更新分组设备信息失败");
+            //软件包
+            SoftPackage softPackage = softPackageEntity.get(0);
+            List<EquipmentSoftPackage> equipmentSoftPackageList = equipmentSoftPackageService.query(String.valueOf(equipment.getId()), String.valueOf(softPackage.getId()), "");
+            //设备和软件包关联表不存在，需要重新下载
+            JSONObject jsonObject = new JSONObject();
+
+            if (equipmentSoftPackageList.size() == 0) {
+                String value = "name:" + softPackage.getName() + " version:" + softPackage.getVersion() + " operate:" + operateConfig.getInstallFile();
+                jsonObject.put("mac", equipment.getMac());
+                jsonObject.put("key", operateConfig.getControlMill());
+                jsonObject.put("value", value);
+
+                //添加设备软件包
+                EquipmentSoftPackage equipmentSoftPackage = new EquipmentSoftPackage();
+                equipmentSoftPackage.setEquipmentId(equipment.getId());
+                equipmentSoftPackage.setSoftPackageId(softPackage.getId());
+                addEquipmentSoftPackageList.add(equipmentSoftPackage);
+
+            } else {    //存在，启动进程
+                String value = "name:" + softPackage.getName() + " version:" + softPackage.getVersion() + " operate:" + operateConfig.getStartProcess();
+                jsonObject.put("mac", equipment.getMac());
+                jsonObject.put("key", operateConfig.getControlMill());
+                jsonObject.put("value", value);
+            }
+            jsonArray.add(jsonObject);
+
+            //更新分组和软件包ID
+            equipment.setGroupId(Integer.parseInt(groupId));
+            equipment.setSoftPackageId(softPackage.getId());
+            //矿机运行状态:执行中
+            equipment.setMiningRunStatus(MiningRunStatus.EXECUTE_MIDDLE.getCode());
         }
-        return equipment;
+
+        //控制矿机
+        HttpClientResult httpClientResult = executeKey(jsonArray);
+        JSONObject equipmentObject = httpClientResult.getObject();
+        StarNodeBo starNodeEquipmentBo = JSON.parseObject(equipmentObject.toString(), StarNodeBo.class);
+        if (!httpClientResult.isSuccess() || !starNodeEquipmentBo.isSucc()) {
+            log.error("设备分组失败, 执行矿机失败 msg: {} ", starNodeEquipmentBo.getErrmsg());
+            initEquipmentResult.setCode("3");
+            initEquipmentResult.setMessage("获取设备信息失败, 执行矿机失败 msg: " + starNodeEquipmentBo.getErrmsg());
+            return initEquipmentResult;
+        }
+
+        //更新设备信息
+        boolean updateEquipment = this.updateBatchById(equipmentList);
+        if (updateEquipment) {
+            throw new ServerException("设备分组失败, 控制矿机成功更新设备信息失败");
+        }
+
+        //添加设备软件包表
+        List<EquipmentSoftPackage> saveResult = equipmentSoftPackageService.save(addEquipmentSoftPackageList);
+
+        initEquipmentResult.setCode("00");
+        initEquipmentResult.setMessage("设置设备分组成功");
+        return initEquipmentResult;
+    }
+
+    @Override
+    public boolean controlMining (JSONArray jsonArray, List<Equipment> equipment) throws Exception{
+
+
+        HttpClientResult httpClientResult = executeKey(jsonArray);
+        JSONObject equipmentObject = httpClientResult.getObject();
+        StarNodeBo starNodeEquipmentBo = JSON.parseObject(equipmentObject.toString(), StarNodeBo.class);
+        if (!httpClientResult.isSuccess() || !starNodeEquipmentBo.isSucc()) {
+            log.error("控制矿机失败, ", starNodeEquipmentBo.getErrmsg());
+            throw new ServerException("控制矿机失败, 执行矿机命令失败");
+        }
+
+        //修改所有状态为执行中
+        boolean updateResult = this.updateBatchById(equipment);
+        if (!updateResult) {
+            log.error("控制矿机成功, 修改矿机状态失败");
+            throw new ServerException("控制矿机成功, 修改矿机状态失败");
+        }
+        return updateResult;
+    }
+
+    @Override
+    public StarNodeResultObject statisticsDivideGroup(String divideGroupName, String pageIndex, String pageSize) throws Exception {
+        Page page = new Page(Long.parseLong(pageIndex), Long.parseLong(pageSize));
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("divideGroupName", divideGroupName);
+        List<DivideGroupStatisticsDto> result = equipmentMapper.statisticsDivideGroup(page, map);
+        page.setRecords(result);
+        return StarNodeSwitch.dtoSwitch(page);
+    }
+
+    @Override
+    public StarNodeResultObject statisticsEquipment() throws Exception {
+        List<EquipmentStatisticsDto> equipmentStatisticsDtos = equipmentMapper.statisticsEquipment();
+        return StarNodeSwitch.dtoSwitch(equipmentStatisticsDtos);
     }
 
     /**
@@ -419,14 +634,12 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
      */
     public HashMap<String, Object> getStarNodeHeader () throws Exception {
 
-        RSAPublicKey rsaPublicKey = null;
-        //星节点传入sign
-        String sign = "";
         //获取当前时间戳
         long currentTime = TimeUtils.getCurrentTime();
-
-        rsaPublicKey = loadPublicKey(STAR_NODE_PUBLIC_KEY);
-        sign = encrypt(rsaPublicKey, (currentTime + STAR_NODE).getBytes());
+        //加载公钥
+        RSAPublicKey rsaPublicKey = loadPublicKey(starNodeConfig.getPublicKey());
+        //星节点传入sign
+        String sign = encrypt(rsaPublicKey, (currentTime + starNodeConfig.getFixedParam()).getBytes());
 
         //获取星节点设备列表
         HashMap<String, Object> stringObjectHashMap = new HashMap<String, Object>();
@@ -439,121 +652,56 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
 
 
     /**
-     * 获取星节点设备信息
-     * @param starNodeHeader  请求头
-     * @param initEquipmentResult  返回对象
+     * 调用星节点接口
+     * @param url   接口url
+     * @param starNodeHeader    头信息
+     * @param initEquipmentResult   返回信息
      * @return
      */
-    public InitEquipmentResult invokeStarNodeEquipmentList (HashMap<String, Object> starNodeHeader, InitEquipmentResult initEquipmentResult) {
+    public InitEquipmentResult invokeStarNode (String url, HashMap<String, Object> starNodeHeader, InitEquipmentResult initEquipmentResult) {
         /**
          * 发送post
          */
-        //获取星节点设备列表
-        HttpClientResult equipmentResult = HttpClientService.sendPost(STAR_NODE_EQUIPMENT_URL, starNodeHeader, null, "http");
+        //获取星节点列表
+        HttpClientResult equipmentResult = HttpClientService.sendPost(url, starNodeHeader, null, "http");
         JSONObject equipmentObject = equipmentResult.getObject();
         if (equipmentObject == null) {
-            log.error("获取设备信息失败, 获取星节点设备信息失败");
+            log.error("调用星节点接口失败, 返回信息为空");
             initEquipmentResult.setCode("02");
-            initEquipmentResult.setMessage("获取设备信息失败, 获取星节点设备信息失败");
+            initEquipmentResult.setMessage("返回信息为空");
             return initEquipmentResult;
         }
 
         StarNodeBo starNodeEquipmentBo = JSON.parseObject(equipmentObject.toString(), StarNodeBo.class);
         if (!equipmentResult.isSuccess() || !starNodeEquipmentBo.isSucc()) {
-            log.error("获取设备信息失败, 调用星节点设备信息失败");
-            initEquipmentResult.setCode("03");
-            initEquipmentResult.setMessage("获取设备信息失败, 调用星节点设备接口失败");
+            log.error("调用星节点接口失败");
+            initEquipmentResult.setCode("02");
+            initEquipmentResult.setMessage("调用星节点接口失败");
             return initEquipmentResult;
         }
 
         JSONObject starNodeEquipmentData = starNodeEquipmentBo.getData();
         if (starNodeEquipmentData == null) {
-            log.error("获取设备信息失败, 设备信息为空");
-            initEquipmentResult.setCode("04");
-            initEquipmentResult.setMessage("获取设备信息失败, 设备信息为空");
+            log.error("调用星节点接口失败, 设备信息为空");
+            initEquipmentResult.setCode("02");
+            initEquipmentResult.setMessage("调用星节点接口失败, 设备信息为空");
             return initEquipmentResult;
         }
 
         //获取DATA数据
         StarNodeDataBo starNodeDataBo = JSON.parseObject(starNodeEquipmentData.toString(), StarNodeDataBo.class);
-        if (starNodeDataBo.getCount() == 0) {
-            log.error("获取设备信息失败, 设备返回数据DATA为空");
-            initEquipmentResult.setCode("04");
-            initEquipmentResult.setMessage("获取设备信息失败, 设备信息为空");
-            return initEquipmentResult;
-        }
         JSONArray starNodeData = starNodeDataBo.getData();
-        if (starNodeDataBo.getCount() == 0) {
-            log.error("获取设备信息失败, 设备返回数据DATA为空");
-            initEquipmentResult.setCode("05");
-            initEquipmentResult.setMessage("获取设备信息失败, 设备信息为空");
+        if (starNodeDataBo.getData().size() == 0) {
+            log.error("调用星节点接口失败, 数据DATA为空");
+            initEquipmentResult.setCode("02");
+            initEquipmentResult.setMessage("数据DATA为空");
             return initEquipmentResult;
         }
 
-        List<StarNodeEquipmentBo> equipmentDtoList = TypeConvert.jsonToClassList(starNodeData, StarNodeEquipmentBo.class);
+//        List<StarNodeEquipmentBo> equipmentDtoList = TypeConvert.jsonToClassList(starNodeData, StarNodeEquipmentBo.class);
         initEquipmentResult.setCode("00");
-        initEquipmentResult.setMessage("获取设备信息成功");
-        initEquipmentResult.setObj(equipmentDtoList);
-        return initEquipmentResult;
-    }
-
-    /**
-     * 获取星节点用户信息
-     * @param starNodeHeader  请求头
-     * @param initEquipmentResult  返回对象
-     * @return
-     */
-    public InitEquipmentResult invokeStarNodeUserList (HashMap<String, Object> starNodeHeader, InitEquipmentResult initEquipmentResult) {
-        //获取星节点用户信息
-        HttpClientResult userResult = HttpClientService.sendPost(STAR_NODE_USER_URL, starNodeHeader, null, "http");
-        JSONObject userObject = userResult.getObject();
-        if (userObject == null) {
-            log.error("获取星节点用户信息失败, 星节点用户信息为空, 请求信息 {} ", starNodeHeader);
-            initEquipmentResult.setCode("06");
-            initEquipmentResult.setMessage("获取星节点用户信息失败, 星节点用户信息为空");
-            return initEquipmentResult;
-        }
-
-        StarNodeBo starNodeUserBo = JSON.parseObject(userObject.toString(), StarNodeBo.class);
-        if (!userResult.isSuccess() || !starNodeUserBo.isSucc()) {
-            log.error("获取星节点用户信息失败, 调用星节点用户接口失败, 请求信息 {} ", starNodeHeader);
-            initEquipmentResult.setCode("07");
-            initEquipmentResult.setMessage("获取星节点用户信息失败, 调用星节点用户接口失败");
-            return null;
-        }
-
-        //获取返回数据
-        JSONObject starNodeUserData = starNodeUserBo.getData();
-        if (starNodeUserData == null) {
-            log.error("获取设备信息失败, 星节点用户信息DATA为空");
-            initEquipmentResult.setCode("08");
-            initEquipmentResult.setMessage("获取星节点用户信息失败, 星节点用户信息为空");
-            return initEquipmentResult;
-        }
-
-        //获取DATA数据
-        StarNodeDataBo starNodeDataBo = JSON.parseObject(starNodeUserData.toString(), StarNodeDataBo.class);
-        if (starNodeDataBo.getCount() == 0) {
-            log.error("获取星节点用户信息失败, 星节点用户信息为空");
-            initEquipmentResult.setCode("09");
-            initEquipmentResult.setMessage("获取星节点用户信息失败, 星节点用户信息为空");
-            return initEquipmentResult;
-        }
-
-        JSONArray starNodeData = starNodeDataBo.getData();
-        if (starNodeData == null) {
-            log.error("获取星节点用户信息失败, 星节点用户信息为空");
-            initEquipmentResult.setCode("10");
-            initEquipmentResult.setMessage("获取星节点用户信息失败, 星节点用户信息为空");
-            return initEquipmentResult;
-        }
-
-        //转换成对象
-        List<StarNodeUserBo> starNodeUserBoList = TypeConvert.jsonToClassList(starNodeData, StarNodeUserBo.class);
-        log.error("获取星节点用户信息成功");
-        initEquipmentResult.setCode("00");
-        initEquipmentResult.setMessage("获取星节点用户信息成功");
-        initEquipmentResult.setObj(starNodeUserBoList);
+        initEquipmentResult.setMessage("调用星节点接口成功");
+        initEquipmentResult.setObj(starNodeData);
         return initEquipmentResult;
     }
 
@@ -568,9 +716,9 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
         JSONObject object = qingLianResult.getObject();
         QingLianBo qingLianBo = JSON.parseObject(object.toString(), QingLianBo.class);
         if (!qingLianResult.isSuccess() || !qingLianBo.isSucc()) {
-            log.error("初始化设备信息失败, 调用青莲云接口失败");
+            log.error("初始化设备信息失败, 调用青莲云接口失败 msg: {} ", qingLianBo.getMsg());
             initEquipmentResult.setCode("16");
-            initEquipmentResult.setMessage("初始化设备信息失败, 调用青莲云接口失败");
+            initEquipmentResult.setMessage("初始化设备信息失败, 调用青莲云接口失败 msg: {}" + qingLianBo.getMsg());
             return initEquipmentResult;
         }
 
@@ -617,15 +765,178 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
         return MD5Security;
     }
 
+    public HttpClientResult executeKey(JSONArray jsonArray) {
+        //当前时间
+        long currentTime = TimeUtils.getCurrentTime();
+        //青莲云sign
+        String  qingLianSign= getQingLianSign(xjwxConfig.getUid(), xjwxConfig.getToken(), currentTime);
+
+        //调用设备执行接口
+        HashMap<String, Object> operateHashMap = new HashMap<String, Object>();
+        operateHashMap.put("uid", xjwxConfig.getUid());
+        operateHashMap.put("tt", currentTime);
+        operateHashMap.put("sign", qingLianSign);
+        operateHashMap.put("data", jsonArray);
+
+        List<NameValuePair> operateBody = HttpClientService.getParams(operateHashMap);
+
+        //批量下发命令控制设备
+        HttpClientResult result = HttpClientService.sendPost(qingLianYunUrlConfig.getBatchControlEquipment(), null, operateBody, "https");
+        return result;
+    }
+
+    /**
+     * 调用青莲云获取设备所有数据点的最新一条上报数据
+     * @param mac  mac地址
+     * @return
+     */
+    public HttpClientResult lastReportData (String mac) {
+        //当前时间
+        long currentTime = TimeUtils.getCurrentTime();
+        //青莲云sign
+        String  qingLianSign= getQingLianSign(xjwxConfig.getUid(), xjwxConfig.getToken(), currentTime);
+
+        //调用设备执行接口
+        HashMap<String, Object> operateHashMap = new HashMap<String, Object>();
+        operateHashMap.put("mac", mac);
+        operateHashMap.put("uid", xjwxConfig.getUid());
+        operateHashMap.put("tt", currentTime);
+        operateHashMap.put("sign", qingLianSign);
+
+        List<NameValuePair> operateBody = HttpClientService.getParams(operateHashMap);
+
+        HttpClientResult result = HttpClientService.sendPost(qingLianYunUrlConfig.getLastReportData(), null, operateBody, "https");
+        return result;
+    }
+
+    /**
+     * 添加默认分组
+     * @param list  设备信息
+     * @param initEquipmentResult   初始化返回对象
+     * @return
+     */
+    public InitEquipmentResult addDefaultGroup (List<Equipment> list, InitEquipmentResult initEquipmentResult) {
+        //查询默认分组
+        List<DivideGroup> divideGroupList = divideGroupService.queryFroVali("", "", "", "", DefaultStatusEnum.OPEN.getCode());
+        if (divideGroupList.size() > 1) {
+            log.error("初始化设备信息失败, 默认分组存在多个: {} ", divideGroupList);
+            initEquipmentResult.setCode("13");
+            initEquipmentResult.setMessage("初始化设备信息失败, 默认分组存在多个");
+            return initEquipmentResult;
+        }
+        //默认分组信息
+        DivideGroup divideGroupDefault = divideGroupList.get(0);
+        //获取币种ID
+        Currency currencyEntity = currencyService.getById(divideGroupDefault.getCurrencyId());
+        //获取软件包
+        List<SoftPackage> softPackageEntity;
+        try {
+            softPackageEntity = softPackageService.query(currencyEntity.getType(), "", "", DelFlag.NOT_DEL.getCode());
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("初始化设备信息失败, 获取软件包失败 type: {} ", divideGroupList);
+            initEquipmentResult.setCode("14");
+            initEquipmentResult.setMessage("初始化设备信息失败, 获取软件包失败");
+            return initEquipmentResult;
+        }
+        if (softPackageEntity == null) {
+            log.error("初始化设备信息失败, 软件包数据为空");
+            initEquipmentResult.setCode("15");
+            initEquipmentResult.setMessage("初始化设备信息失败, 软件包数据为空");
+            return initEquipmentResult;
+        }
+
+        //软件包
+        SoftPackage softPackage = softPackageEntity.get(0);
+
+        //执行脚本(参数之前要空格)
+        String value  = "name:" + softPackage.getName() + " version:" + softPackage.getVersion() + " operate:" + operateConfig.getInstallFile();
+        JSONArray jsonArray = new JSONArray();
+        //拼接参数
+        for (int i = 0; i < list.size(); i++) {
+            Equipment equipment = list.get(i);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("mac", equipment.getMac());
+            jsonObject.put("key", operateConfig.getControlMill());
+            jsonObject.put("value", value);
+            jsonArray.add(i, jsonObject);
+        }
+        //下载用户
+        HttpClientResult httpClientResult = executeKey(jsonArray);
+        JSONObject object = httpClientResult.getObject();
+        QingLianBo qingLianBo = JSON.parseObject(object.toString(), QingLianBo.class);
+        if (!httpClientResult.isSuccess() || !qingLianBo.isSucc()) {
+            log.error("初始化设备信息失败, 批量下载安装失败 {}", qingLianBo.getMsg());
+            initEquipmentResult.setCode("16");
+            initEquipmentResult.setMessage("初始化设备信息失败, 批量下载安装失败 " + qingLianBo.getMsg());
+            return initEquipmentResult;
+        }
+
+        //软件包
+        List<EquipmentSoftPackage> equipmentSoftPackageList = new ArrayList<EquipmentSoftPackage>();
+        for (Equipment equipment : list) {
+            //设置设备状态
+            //设置分组
+            equipment.setGroupId(divideGroupDefault.getId());
+            //设备运行状态
+            equipment.setMiningRunStatus(MiningRunStatus.EXECUTE_MIDDLE.getCode());
+            //软件包ID
+            equipment.setSoftPackageId(softPackage.getId());
+
+            EquipmentSoftPackage equipmentSoftPackage = new EquipmentSoftPackage();
+            //设置设备矿机文件关联
+            equipmentSoftPackage.setEquipmentId(equipment.getId());
+            //软件包ID
+            equipmentSoftPackage.setSoftPackageId(softPackage.getId());
+            //矿机ID
+            equipmentSoftPackage.setMiningId("");
+            equipmentSoftPackageList.add(equipmentSoftPackage);
+        }
+
+        //更新分组信息
+        boolean updateGroupResult = this.updateBatchById(list);
+        if (!updateGroupResult) {
+            log.error("初始化设备信息失败, 设备启动成功修改设备分组失败 {}", list);
+            initEquipmentResult.setCode("17");
+            initEquipmentResult.setMessage("初始化设备信息失败, 设备启动成功修改设备分组失败");
+            return initEquipmentResult;
+        }
+
+        //添加设备矿机文件夹关联表
+        try {
+            List<EquipmentSoftPackage> save = equipmentSoftPackageService.save(equipmentSoftPackageList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("初始化设备信息失败, 添加设备矿机文件夹关联表失败 {}", list);
+            initEquipmentResult.setCode("18");
+            initEquipmentResult.setMessage("初始化设备信息失败, 添加设备矿机文件夹关联表失败");
+            return initEquipmentResult;
+        }
+        log.error("初始化设备信息成功, 数据库新增数据默认分组成功");
+        initEquipmentResult.setCode("00");
+        initEquipmentResult.setMessage("初始化设备信息失败, 数据库新增数据添加默认分组成功");
+        return initEquipmentResult;
+    }
+
     public static void main (String[] args) throws InterruptedException {
+        //企业UID(唯一)
+        final String XJWX_UID = "10585";
+        //企业验证TOKEN(唯一)
+        final String XJWX_TOKEN = "d26522e33d694aaddb693c9c99fbd964";
+
         long l = 1000l;
 //            Thread.sleep(l);
 
         String url = "https://api.qinglianyun.com/open/v3/set/api";
         String urlToday = "https://api.qinglianyun.com/open/v2/get/api";
-//        String mac = "14:6b:9c:f6:03:f8";
+        //获取获取设备所有数据点的最新一条上报数据
+        String newUrl = "https://api.qinglianyun.com/open/v2/getdp/api";
+        //戴工mac
+        String mac = "14:6b:9c:f6:03:f8";
 //        String mac = "e0:b9:a5:21:94:fe";
-        String mac = "68:a3:c4:f4:d5:6d";
+//        String mac = "68:a3:c4:f4:d5:6d";
+//        String mac = "9C:B7:0D:F0:7D:CF";
+//        String mac = "d0:df:9a:c0:25:d6";
         long currentTime = TimeUtils.getCurrentTime();
         String  qingLianSign= getQingLianSign(XJWX_UID, XJWX_TOKEN, currentTime);
         HashMap<String, Object> stringObjectHashMap = new HashMap<>();
@@ -637,7 +948,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
         stringObjectHashMap.put("sign", qingLianSign);
 
         HashMap<String, Object> stringObjectDownloadHashMap = new HashMap<>();
-        String value = "name:filestorm.zip version:00.02 operate:install.sh";
+        String value = "name:filestorm.zip version:00.03 operate:install.sh";
         stringObjectDownloadHashMap.put("mac", mac);
         stringObjectDownloadHashMap.put("key", "download");
         stringObjectDownloadHashMap.put("value", value);
@@ -652,20 +963,31 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
         stringObjectHashMap1.put("tt", currentTime);
         stringObjectHashMap1.put("sign", qingLianSign);
 
+        HashMap<String, Object> newStringObjectHashMap2 = new HashMap<String, Object>();
+        newStringObjectHashMap2.put("mac", mac);
+        newStringObjectHashMap2.put("uid", XJWX_UID);
+        newStringObjectHashMap2.put("tt", currentTime);
+        newStringObjectHashMap2.put("sign", qingLianSign);
+
 //        //获取参数对象
         List<NameValuePair> params = HttpClientService.getParams(stringObjectHashMap);
         //下载文件夹
         List<NameValuePair> stringObjectDownload = HttpClientService.getParams(stringObjectDownloadHashMap);
         List<NameValuePair> paramToday = HttpClientService.getParams(stringObjectHashMap1);
+        //获取最新的上传文件
+        List<NameValuePair> newParam = HttpClientService.getParams(newStringObjectHashMap2);
 
         //获取设备列表
 //        HttpClientResult equipmentList = HttpClientService.sendPost(url, null, params, "https");
+        //下载矿机文件夹
             HttpClientResult equipmentList = HttpClientService.sendPost(url, null, stringObjectDownload, "https");
 
         //获取设备今天上传数据
 //        HttpClientResult today = HttpClientService.sendPost(urlToday, null, paramToday, "https");
 //        System.out.println("onlineTimeResult----------" + today);
 
+//        HttpClientResult newResult = HttpClientService.sendPost(newUrl, null, newParam, "https");
+//        System.out.println("newResult----------" + newResult);
 
 //        test();
     }

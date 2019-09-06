@@ -19,6 +19,25 @@
         <result column="GROUP_ID" property="groupId" />
     </resultMap>
 
+    <!-- 分组统计 -->
+    <resultMap id="DivideGroupStatisticsDto" type="com.mg.sn.mill.model.dto.DivideGroupStatisticsDto">
+        <id column="GROUP_ID" property="groupId" />
+        <result column="GROUP_NAME" property="groupName" />
+        <result column="ONLINE_SUM" property="onlineSum" />
+        <result column="NOT_ONLINE_SUM" property="notOnlineSum" />
+        <result column="TOTAL_COUNT" property="totalCount" />
+        <result column="ONLINE_RATE" property="onlineRate" />
+    </resultMap>
+
+    <!-- 设备统计 -->
+    <resultMap id="EquipmentStatisticsDto" type="com.mg.sn.mill.model.dto.EquipmentStatisticsDto">
+        <result column="E_ONLINE_SUM" property="eOnlineSum" />
+        <result column="E_NOT_ONLINE_SUM" property="eNotOnlineSum" />
+        <result column="E_TOTAL_COUNT" property="eTotalCount" />
+        <result column="E_ONLINE_RATE" property="eOnlineRate" />
+        <result column="E_NOT_GROUP_SUM" property="eNotGroupSum" />
+    </resultMap>
+
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         ID, IOTID, NAME, IP, RUN_STATUS, CONTACT_USER_PHONE, CONTACT_USER_NAME, CONTACT_USER_ID, YTD_ONLINE_HOUR, YTD_ONLINE_MINUTE, TOTAL_ONLINE_HOUR, TOTAL_ONLINE_MINUTE, GROUP_ID
@@ -45,39 +64,75 @@
         </if>
     </select>
     <select id="queryPage"  resultMap="BaseResultMap" parameterType="map">
-    SELECT
-        ID,
-        IOTID,
-        NAME,
-        IP,
-        MAC,
-        RUN_STATUS,
-        CONTACT_USER_PHONE,
-        CONTACT_USER_NAME,
-        CONTACT_USER_ID,
-        CONTACT_USER_NO,
-        YTD_ONLINE_HOUR,
-        YTD_ONLINE_MINUTE,
-        TOTAL_ONLINE_HOUR,
-        TOTAL_ONLINE_MINUTE,
-        GROUP_ID,
-        FREEZE,
-        QINGLIAN_USER_ID,
-        QINGLIAN_USER_TOKEN,
-        DATA_POINT_NUM,
-        DEVICE_TYPE,
-        IP_LOCATION,
-        IS_ONLINE,
-        IS_LINKAGE,
-        WIFI_TYPE
-    FROM equipment
-    where 1 = 1
-    <!--<if test = "name != null and name != ''">-->
-        <!--AND NAME = #{name}-->
-    <!--</if>-->
-    <!--<if test = "ip != null and ip != ''">-->
-        <!--AND IP = #{ip}-->
-    <!--</if>-->
+        SELECT
+            ID,
+            IOTID,
+            NAME,
+            IP,
+            MAC,
+            RUN_STATUS,
+            CONTACT_USER_PHONE,
+            CONTACT_USER_NAME,
+            CONTACT_USER_ID,
+            CONTACT_USER_NO,
+            YTD_ONLINE_HOUR,
+            YTD_ONLINE_MINUTE,
+            TOTAL_ONLINE_HOUR,
+            TOTAL_ONLINE_MINUTE,
+            GROUP_ID,
+            FREEZE,
+            QINGLIAN_USER_ID,
+            QINGLIAN_USER_TOKEN,
+            DATA_POINT_NUM,
+            DEVICE_TYPE,
+            IP_LOCATION,
+            IS_ONLINE,
+            IS_LINKAGE,
+            WIFI_TYPE
+        FROM equipment
+        where 1 = 1
+        <if test = "params.name != null and params.name != ''">
+            AND NAME = #{params.name}
+        </if>
+        <if test = "params.ip != null and params.ip != ''">
+            AND IP = #{params.ip}
+        </if>
+        <if test = "params.runStatus != null and params.runStatus != ''">
+            AND RUN_STATUS = #{params.runStatus}
+        </if>
+        <if test = "params.notGroup != null and params.notGroup != ''">
+            AND GROUP_ID is null
+        </if>
+    </select>
+
+    <select id="statisticsDivideGroup" resultMap="DivideGroupStatisticsDto" parameterType="map">
+        SELECT
+            e.GROUP_ID AS GROUP_ID,
+            dg.`NAME` AS GROUP_NAME,
+            sum( CASE e.IS_ONLINE WHEN 'true' THEN 1 ELSE 0 END ) AS ONLINE_SUM,
+            sum( CASE e.IS_ONLINE WHEN 'false' THEN 1 ELSE 0 END ) AS NOT_ONLINE_SUM,
+            count( e.IS_ONLINE ) AS TOTAL_COUNT,
+            ROUND( sum( CASE e.IS_ONLINE WHEN 'true' THEN 1 ELSE 0 END ) / count( e.IS_ONLINE ) * 100, 2 ) AS ONLINE_RATE
+        FROM
+            equipment e
+            LEFT JOIN divide_group dg ON e.GROUP_ID = dg.ID
+        GROUP BY
+            e.GROUP_ID
+        HAVING 1 = 1
+        <if test = "params.divideGroupName != null and params.divideGroupName != ''">
+        AND dg.`NAME` = #{params.divideGroupName}
+    </if>
+    </select>
+
+    <select id="statisticsEquipment" resultMap="EquipmentStatisticsDto" parameterType="map">
+        SELECT
+            sum( CASE e.IS_ONLINE WHEN 'true' THEN 1 ELSE 0 END ) AS E_ONLINE_SUM,
+            sum( CASE e.IS_ONLINE WHEN 'false' THEN 1 ELSE 0 END ) AS E_NOT_ONLINE_SUM,
+            count( e.IS_ONLINE ) AS E_TOTAL_COUNT,
+            ROUND( sum( CASE e.IS_ONLINE WHEN 'true' THEN 1 ELSE 0 END ) / count( e.IS_ONLINE ) * 100, 2 ) AS E_ONLINE_RATE,
+            sum( CASE WHEN e.GROUP_ID is null THEN 1 ELSE 0 END ) AS E_NOT_GROUP_SUM
+        FROM
+            equipment e
     </select>
 
 </mapper>

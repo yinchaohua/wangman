@@ -15,6 +15,11 @@ public class IDRequestObject {
      */
     private String groupId;
 
+    /**
+     *  控制指令
+     */
+    private String controlKey;
+
     public IDRequestObject () {
 
     }
@@ -33,5 +38,13 @@ public class IDRequestObject {
 
     public void setGroupId(String groupId) {
         this.groupId = groupId;
+    }
+
+    public String getControlKey() {
+        return controlKey;
+    }
+
+    public void setControlKey(String controlKey) {
+        this.controlKey = controlKey;
     }
 }
