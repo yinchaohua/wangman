@@ -3,8 +3,6 @@ package com.mg.sn.mill.mapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mg.sn.mill.model.dto.DivideGroupStatisticsDto;
 import com.mg.sn.mill.model.dto.EquipmentStatisticsDto;
-import com.mg.sn.mill.model.dto.WalletDto;
-import com.mg.sn.mill.model.entity.DivideGroup;
 import com.mg.sn.mill.model.entity.Equipment;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;

@@ -2,9 +2,9 @@
 spring:
     profiles:
         #开发环境
-        active: dev
+#        active: dev
         #服务器环境
-#        active: prod
+        active: prod
 
 #星节点
 starnode:

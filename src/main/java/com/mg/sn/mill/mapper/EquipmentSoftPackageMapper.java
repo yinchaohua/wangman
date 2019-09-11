@@ -2,7 +2,6 @@ package com.mg.sn.mill.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.mg.sn.mill.model.entity.EquipmentSoftPackage;
-import com.mg.sn.mill.model.entity.SoftPackage;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
