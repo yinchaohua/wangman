@@ -1,5 +1,6 @@
 package com.mg.sn.mill.controller;
 
+import com.mg.sn.ConfigProperties.LoginConfig;
 import com.mg.sn.mill.model.entity.User;
 import com.mg.sn.mill.service.UserService;
 import com.mg.sn.utils.annotation.NotNull;
@@ -46,6 +47,9 @@ public class UserController extends StarNodeBaseController {
     @Autowired
     private RedisUtil redisUtil;
 
+    @Autowired
+    private LoginConfig loginConfig;
+
     private static final String LOGIN_ERROR_NUM_KEY = "LOGIN_ERROR_NUM_KEY";
 
 
@@ -85,7 +89,7 @@ public class UserController extends StarNodeBaseController {
         HashMap<String, Object> map = new HashMap<>();
         map.put("userId", userList.get(0).getId());
         map.put("account", account);
-        redisUtil.set(token, map, 300000);
+        redisUtil.set(token, map, loginConfig.getTokenExpireTime());
 
         return StarNodeWrappedResult.successWrapedResult("登陆成功", token);
     }

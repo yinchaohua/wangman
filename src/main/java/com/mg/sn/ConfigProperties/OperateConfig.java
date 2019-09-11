@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@PropertySource({"classpath:application.yml"})
 @ConfigurationProperties(prefix = "operate")
 public class OperateConfig {
 
@@ -29,6 +28,16 @@ public class OperateConfig {
      *  结束
      */
     private String stopProcess;
+
+    /**
+     *  重启进程
+     */
+    private String restartProcess;
+
+    /**
+     *  重启服务
+     */
+    private String restartServer;
 
     /**
      *  控制

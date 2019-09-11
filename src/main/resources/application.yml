@@ -1,7 +1,10 @@
 
 spring:
     profiles:
+        #开发环境
         active: dev
+        #服务器环境
+#        active: prod
 
 #星节点
 starnode:
@@ -43,10 +46,19 @@ operate:
     startProcess: start.sh
     #结束
     stopProcess: stop.sh
+    #重启进程
+    restartProcess: restart-kj.sh
+    #重启矿机
+    restartServer: restart-server.sh
     #控制
     controlMill: control
     #矿机列表
     millList: mill_list
+
+#redis配置
+login:
+    #登陆token时间
+    tokenExpireTime: 3000
 
 
 

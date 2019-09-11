@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
  */
 @Data
 @Component
-@PropertySource({"classpath:application.yml"})
 @ConfigurationProperties(prefix = "starnode")
 public class StarNodeConfig {
 

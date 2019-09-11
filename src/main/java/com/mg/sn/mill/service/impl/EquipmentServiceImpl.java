@@ -405,6 +405,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                             String version = split[1];
                             String miningRunstatus = split[2].substring(0, 1);
                             String miningId = split[3];
+                            //设置矿机运行状态
                             equipment.setMiningRunStatus(miningRunstatus);
                             List<EquipmentSoftPackage> equipmentSoftPackageList;
                             try {
@@ -423,6 +424,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                                 return initEquipmentResult;
                             }
                             EquipmentSoftPackage equipmentSoftPackage = equipmentSoftPackageList.get(0);
+                            //设置矿机ID
                             equipmentSoftPackage.setMiningId(miningId);
                             updateEquipmentSoftPackageList.add(equipmentSoftPackage);
                         }
@@ -435,7 +437,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                         List<EquipmentSoftPackage> update = equipmentSoftPackageService.update(updateEquipmentSoftPackageList);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        initEquipmentResult.setCode("22");
+                        initEquipmentResult.setCode("23");
                         initEquipmentResult.setMessage("初始化设备信息失败, 更新旧设备时设备和软件包关联信息不存在");
                         return initEquipmentResult;
                     }
@@ -445,7 +447,7 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                 boolean updateResult = this.updateBatchById(updateEquipment);
                 if (!updateResult) {
                     log.error("初始化设备失败, 已存在数据: {} 更新失败", updateEquipment);
-                    initEquipmentResult.setCode("14");
+                    initEquipmentResult.setCode("24");
                     initEquipmentResult.setMessage("初始化设备信息失败, 已存在数据更新失败");
                     return initEquipmentResult;
                 }
@@ -456,15 +458,16 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
                 boolean addResult = this.saveBatch(addEquipment);
                 if (!addResult) {
                     log.error("初始化设备失败, 新添加设备数据: {} 插入失败", addEquipment);
-                    initEquipmentResult.setCode("15");
+                    initEquipmentResult.setCode("25");
                     initEquipmentResult.setMessage("初始化设备信息失败, 新添加设备数据插入失败");
                     return initEquipmentResult;
                 }
+
                 //添加默认分组
                 InitEquipmentResult initAddEquipmentResult = addDefaultGroup(addEquipment, initEquipmentResult);
                 if (!initAddEquipmentResult.isSucc()) {
                     log.error("初始化设备失败, 新添加设备数据默认分组失败 list: {}", addEquipment);
-                    initEquipmentResult.setCode("16");
+                    initEquipmentResult.setCode("26");
                     initEquipmentResult.setMessage("初始化设备信息失败, 新添加设备数据默认分组失败");
                     return initEquipmentResult;
                 }
@@ -477,19 +480,22 @@ public class EquipmentServiceImpl extends ServiceImpl<EquipmentMapper, Equipment
     }
 
     @Override
-    public StarNodeResultObject queryPage(String name, String ip, String type, String pageIndex, String pageSize) {
+    public StarNodeResultObject queryPage(String name, String ip, String type, String userName, String pageIndex, String pageSize) {
         try {
             Page page = new Page(Long.parseLong(pageIndex), Long.parseLong(pageSize));
             HashMap<String, Object> map = new HashMap<String, Object>();
             map.put("name", name);
             map.put("ip", ip);
+            map.put("userName", userName);
             //正常
-            if (StringUtils.stringEquals(type, RunStatus.NORMAL.getCode())) {
-                map.put("runStatus", type);
-            } else if (StringUtils.stringEquals(type, RunStatus.MISS.getCode())) {  //失联
-                map.put("runStatus", type);
-            } else if (StringUtils.stringEquals(type, RunStatus.NO_GROUP.getCode())) {  //未分组
-                map.put("notGroup", type);
+            if (StringUtils.isNotEmpty(type)) {
+                if (StringUtils.stringEquals(type, RunStatus.NORMAL.getCode())) {
+                    map.put("runStatus", type);
+                } if (StringUtils.stringEquals(type, RunStatus.MISS.getCode())) {  //失联
+                    map.put("runStatus", type);
+                } if (StringUtils.stringEquals(type, RunStatus.NO_GROUP.getCode())) {  //未分组
+                    map.put("notGroup", type);
+                }
             }
             List<Equipment> result = equipmentMapper.queryPage(page, map);
             page.setRecords(result);

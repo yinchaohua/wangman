@@ -77,17 +77,18 @@ public class EquipmentController extends StarNodeBaseController {
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "name", value = "名称", required = false, dataType = "String", paramType = "query"),
 			@ApiImplicitParam(name = "ip", value = "ip地址", required = false, dataType = "String", paramType = "query"),
+			@ApiImplicitParam(name = "userName", value = "用户名", required = false, dataType = "String", paramType = "query"),
 			@ApiImplicitParam(name = "type", value = "设备类型(1:正常;2:失联;4:未分组)", required = false, dataType = "String", paramType = "query"),
 			@ApiImplicitParam(name = "pageIndex", value = "页码", required = false, dataType = "String", paramType = "query"),
 			@ApiImplicitParam(name = "pageSize", value = "页大小", required = false, dataType = "String", paramType = "query"),
 			@ApiImplicitParam(name = "address", value = "地址", required = false, dataType = "String", paramType = "query")
 	})
 	@PostMapping(value = "query" ,produces = "application/json;charset=UTF-8")
-	public StarNodeWrappedResult query (String name, String ip, String type,
+	public StarNodeWrappedResult query (String name, String ip, String type, String userName,
 										@RequestParam(value = "pageIndex", defaultValue = "1")String  pageIndex,
 										@RequestParam(value = "pageSize", defaultValue = "10")String  pageSize) {
 
-		StarNodeResultObject starNodeResultObject = equipmentService.queryPage(name, ip, type, pageIndex, pageSize);
+		StarNodeResultObject starNodeResultObject = equipmentService.queryPage(name, ip, type, userName, pageIndex, pageSize);
 
 		//统计设备数据
 		StarNodeResultObject equipmentStatistics;
@@ -334,9 +335,11 @@ public class EquipmentController extends StarNodeBaseController {
                     break;
                 //重启进程
                 case "3" :
+					operate = operateConfig.getRestartProcess();
                     break;
                 //重启矿机
                 case "4" :
+					operate = operateConfig.getRestartServer();
                     break;
             }
             String value = "name:" + softPackage.getName() + " version:" + softPackage.getVersion() + " operate:" + operate;

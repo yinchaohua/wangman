@@ -4,6 +4,7 @@ import com.mg.sn.mill.model.entity.Currency;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.mg.sn.mill.model.entity.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Repository;
  * @author hcy
  * @since 2019-08-09
  */
-
 @Mapper
 @Repository
 public interface CurrencyMapper extends BaseMapper<Currency> {

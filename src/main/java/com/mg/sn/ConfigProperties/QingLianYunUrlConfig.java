@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@PropertySource({"classpath:application.yml"})
 @ConfigurationProperties(prefix = "qinglianyunurl")
 public class QingLianYunUrlConfig {
 

@@ -103,6 +103,9 @@
         <if test = "params.notGroup != null and params.notGroup != ''">
             AND GROUP_ID is null
         </if>
+        <if test = "params.userName != null and params.userName != ''">
+            AND CONTACT_USER_NAME = #{params.userName}
+        </if>
     </select>
 
     <select id="statisticsDivideGroup" resultMap="DivideGroupStatisticsDto" parameterType="map">

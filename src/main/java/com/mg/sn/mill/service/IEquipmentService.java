@@ -38,11 +38,12 @@ public interface IEquipmentService extends IService<Equipment> {
      * @param name
      * @param ip
      * @param type
+     * @param userName
      * @param pageIndex
      * @param pageSize
      * @return
      */
-    StarNodeResultObject queryPage (String name, String ip, String type, String pageIndex, String pageSize);
+    StarNodeResultObject queryPage (String name, String ip, String type, String userName, String pageIndex, String pageSize);
 
     /**
      * 设备分组

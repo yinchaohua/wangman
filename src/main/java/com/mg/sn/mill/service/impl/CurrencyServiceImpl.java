@@ -29,7 +29,7 @@ public class CurrencyServiceImpl extends ServiceImpl<CurrencyMapper, Currency> i
 	
 	private final Logger logger = LoggerFactory.getLogger(CurrencyServiceImpl.class);
 	
-	@Resource
+	@Autowired
 	private CurrencyMapper currencyMapper;
 
     @Override

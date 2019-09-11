@@ -4,12 +4,12 @@ server:
 
 spring:
     datasource:
-        username: root
-        password: root
-        url: jdbc:mysql://localhost:3306/star_node?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=UTC
+        type: com.alibaba.druid.pool.DruidDataSource
+        username: xjwx@star_mill
+        password: voi7a2ev3b8b4ycz5p64
+        url: jdbc:mysql://119.3.132.49:11998/star_node_mill?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=UTC
         driver-class-name: com.mysql.cj.jdbc.Driver
         ###################以下为druid增加的配置###########################
-        type: com.alibaba.druid.pool.DruidDataSource
         # 下面为连接池的补充设置，应用到上面所有数据源中
         # 初始化大小，最小，最大
         initialSize: 5
@@ -37,10 +37,12 @@ spring:
         useGlobalDataSourceStat: true
         ###############以上为配置druid添加的配置########################################
 
+
     #redis集群
     redis:
-        host: 127.0.0.1
-        port: 6379
+        host: 192.168.0.10
+        password: brfjs9gdh6esh9ypa7ek84qrw9
+        port: 11997
         # 连接超时时间（毫秒）
         timeout: 20000
         #    集群环境打开下面注释，单机不需要打开
@@ -58,7 +60,6 @@ spring:
             max-idle: 8
             # 连接池最大阻塞等待时间（使用负值表示没有限制)
             max-wait: -1
-        password:
     application:
         name: spring-boot-redis
 
@@ -72,7 +73,7 @@ spring:
 mybatis-plus:
     mapper-locations: classpath:mapping/*Mapper.xml
     # MyBaits 别名包扫描路径，通过该属性可以给包中的类注册别名
-    #    type-aliases-package: com.mg.sn.mill.model.*
+#    type-aliases-package: com.mg.sn.mill.model.*
     # 该配置请和 typeAliasesPackage 一起使用，如果配置了该属性，则仅仅会扫描路径下以该类作为父类的域对象 。
     type-aliases-super-type: java.lang.Object
     configuration:
