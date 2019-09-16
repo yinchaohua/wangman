@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.mg</groupId>
     <artifactId>star-node</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <!--<version>0.0.1-SNAPSHOT</version>-->
     <name>star-node</name>
     <description>star-node</description>
 
